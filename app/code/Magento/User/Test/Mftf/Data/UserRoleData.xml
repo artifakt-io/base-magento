@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ /**
+  * Copyright © Magento, Inc. All rights reserved.
+  * See COPYING.txt for license details.
+  */
+-->
+
+<entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/dataProfileSchema.xsd">
+    <entity name="adminProductInWebsiteRole" type="user_role">
+        <data key="rolename" unique="suffix">restrictedWebsiteRole</data>
+        <data key="current_password">123123q</data>
+        <array key="resource">
+            <item>Magento_Catalog::catalog</item>
+            <item>Magento_Catalog::catalog_inventory</item>
+            <item>Magento_Catalog::products</item>
+            <item>Magento_Catalog::categories</item>
+            <item>Magento_Backend::stores</item>
+            <item>Magento_Backend::stores_attributes</item>
+            <item>Magento_Catalog::attributes_attributes</item>
+        </array>
+    </entity>
+    <entity name="adminRestrictedProductRole" type="user_role">
+        <data key="rolename" unique="suffix">restrictedCatalogRole</data>
+        <data key="current_password">123123q</data>
+        <array key="resource">
+            <item>Magento_Catalog::catalog</item>
+            <item>Magento_Catalog::catalog_inventory</item>
+            <item>Magento_Catalog::products</item>
+        </array>
+    </entity>
+    <entity name="RoleTest" type="user_role">
+        <data key="rolename" unique="suffix">RoleTest</data>
+        <data key="current_password">123123q</data>
+    </entity>
+    <entity name="adminMarketingInWebsiteRole" type="user_role">
+        <data key="rolename" unique="suffix">restrictedWebsiteRole</data>
+        <data key="current_password">123123q</data>
+        <data key="gws_is_all">0</data>
+        <array key="gws_websites">
+            <item>1</item>
+        </array>
+        <array key="resource">
+            <item>Magento_Backend::marketing</item>
+            <item>Magento_SalesRule::quote</item>
+        </array>
+    </entity>
+</entities>

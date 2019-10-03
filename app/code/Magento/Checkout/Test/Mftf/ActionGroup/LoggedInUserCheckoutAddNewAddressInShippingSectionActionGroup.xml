@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ /**
+  * Copyright © Magento, Inc. All rights reserved.
+  * See COPYING.txt for license details.
+  */
+-->
+
+<actionGroups xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/actionGroupSchema.xsd">
+    <!--  Logged in user checkout add new adress shipping section -->
+    <actionGroup name="LoggedInUserCheckoutAddNewAddressInShippingSectionActionGroup">
+        <arguments>
+            <argument name="customerVar"/>
+            <argument name="customerAddressVar"/>
+        </arguments>
+        <fillField selector="{{CheckoutShippingSection.addStreet}}" userInput="{{customerAddressVar.street[0]}}" stepKey="enterStreet"/>
+        <fillField selector="{{CheckoutShippingSection.addCity}}" userInput="{{customerAddressVar.city}}" stepKey="enterCity"/>
+        <selectOption selector="{{CheckoutShippingSection.addState}}" userInput="{{customerAddressVar.state}}" stepKey="selectRegion"/>
+        <fillField selector="{{CheckoutShippingSection.addPostcode}}" userInput="{{customerAddressVar.postcode}}" stepKey="enterPostcode"/>
+        <fillField selector="{{CheckoutShippingSection.addTelephone}}" userInput="{{customerAddressVar.telephone}}" stepKey="enterTelephone"/>
+        <click selector="{{CheckoutShippingSection.addSaveButton}}" stepKey="clickSaveAdressAdd"/>
+        <waitForPageLoad stepKey="waitPageLoad"/>
+        <see selector="{{CheckoutShippingSection.selectedShippingAddress}}" userInput="{{customerAddressVar.state}}" stepKey="seeRegionSelected"/>
+    </actionGroup>
+
+    <actionGroup name="LoggedInUserCheckoutAddNewShippingSectionWithoutRegionActionGroup"
+                 extends="LoggedInUserCheckoutAddNewAddressInShippingSectionActionGroup">
+        <remove keyForRemoval="selectRegion"/>
+        <remove keyForRemoval="seeRegionSelected"/>
+        <selectOption selector="{{CheckoutShippingSection.addCountry}}" userInput="{{customerAddressVar.country}}" after="enterPostcode" stepKey="enterCountry"/>
+        <see selector="{{CheckoutShippingSection.selectedShippingAddress}}" userInput="{{customerAddressVar.city}}" after="waitPageLoad" stepKey="seeCitySelected"/>
+    </actionGroup>
+</actionGroups>

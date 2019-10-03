@@ -1,0 +1,49 @@
+<?php
+/**
+ *
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+namespace Magento\Backend\Controller\Adminhtml\Noroute;
+
+class Index extends \Magento\Backend\App\Action
+{
+    /**
+     * Array of actions which can be processed without secret key validation
+     *
+     * @var string[]
+     */
+    protected $_publicActions = ['index'];
+
+    /**
+     * @var \Magento\Framework\View\Result\PageFactory
+     */
+    protected $resultPageFactory;
+
+    /**
+     * @param \Magento\Backend\App\Action\Context $context
+     * @param \Magento\Framework\View\Result\PageFactory $resultPageFactory
+     */
+    public function __construct(
+        \Magento\Backend\App\Action\Context $context,
+        \Magento\Framework\View\Result\PageFactory $resultPageFactory
+    ) {
+        parent::__construct($context);
+        $this->resultPageFactory = $resultPageFactory;
+    }
+
+    /**
+     * Noroute action
+     *
+     * @return \Magento\Backend\Model\View\Result\Page
+     */
+    public function execute()
+    {
+        /** @var \Magento\Backend\Model\View\Result\Page $resultPage */
+        $resultPage = $this->resultPageFactory->create();
+        $resultPage->setStatusHeader(404, '1.1', 'Not Found');
+        $resultPage->setHeader('Status', '404 File not found');
+        $resultPage->addHandle('adminhtml_noroute');
+        return $resultPage;
+    }
+}

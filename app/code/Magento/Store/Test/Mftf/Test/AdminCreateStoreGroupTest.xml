@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ /**
+  * Copyright © Magento, Inc. All rights reserved.
+  * See COPYING.txt for license details.
+  */
+-->
+
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../../../../../dev/tests/acceptance/vendor/magento/magento2-functional-testing-framework/src/Magento/FunctionalTestingFramework/Test/etc/testSchema.xsd">
+    <test name="AdminCreateStoreGroupTest">
+        <annotations>
+            <features value="Create a store group in admin"/>
+            <stories value="Create a store group in admin"/>
+            <title value="Create a store group in admin"/>
+            <description value="Create a store group in admin"/>
+            <group value="store"/>
+        </annotations>
+        <before>
+            <getData entity="DefaultRootCategoryGetter" stepKey="getDefaultRootCategory"/>
+            <createData stepKey="createCustomStoreGroup1" entity="customStoreGroup">
+                <requiredEntity createDataKey="getDefaultRootCategory"/>
+            </createData>
+            <createData stepKey="createCustomStoreGroup2" entity="customStoreGroup">
+                <requiredEntity createDataKey="getDefaultRootCategory"/>
+            </createData>
+        </before>
+        <after>
+            <actionGroup ref="DeleteCustomStoreActionGroup" stepKey="deleteCustomStoreGroup1">
+                <argument name="storeGroupName" value="$$createCustomStoreGroup1.group[name]$$"/>
+            </actionGroup>
+            <actionGroup ref="DeleteCustomStoreActionGroup" stepKey="deleteCustomStoreGroup2">
+                <argument name="storeGroupName" value="$$createCustomStoreGroup2.group[name]$$"/>
+            </actionGroup>
+            <amOnPage url="admin/admin/auth/logout/" stepKey="amOnLogoutPage"/>
+        </after>
+
+        <actionGroup ref="LoginAsAdmin" stepKey="loginAsAdmin"/>
+
+        <amOnPage stepKey="openAdminSystemStorePage" url="{{AdminSystemStorePage.url}}"/>
+
+        <actionGroup ref="filterStoresGridByStore" stepKey="enterStoreGroup1Name">
+            <argument name="store" value="$$createCustomStoreGroup1.group[name]$$"/>
+        </actionGroup>
+        <see stepKey="seeStoreGroup1NameAfterSearch" selector="{{AdminStoresGridSection.storeInFirstRow}}" userInput="$$createCustomStoreGroup1.group[name]$$"/>
+
+        <actionGroup ref="filterStoresGridByStore" stepKey="enterStoreGroup2Name">
+            <argument name="store" value="$$createCustomStoreGroup2.group[name]$$"/>
+        </actionGroup>
+        <see stepKey="seeStoreGroup1NameAfterSearch2" selector="{{AdminStoresGridSection.storeInFirstRow}}" userInput="$$createCustomStoreGroup2.group[name]$$"/>
+    </test>
+</tests>
