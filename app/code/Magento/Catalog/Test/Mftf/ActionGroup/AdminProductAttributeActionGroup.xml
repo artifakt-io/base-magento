@@ -20,9 +20,11 @@
         <arguments>
             <argument name="useForPromoRule" type="string" defaultValue="Yes"/>
         </arguments>
-        <click selector="{{StorefrontPropertiesSection.storefrontPropertiesTab}}" stepKey="clickStoreFrontPropertiesTab"/>
-        <selectOption selector="{{StorefrontPropertiesSection.useForPromoRuleConditions}}" userInput="{{useForPromoRule}}" stepKey="changeOption"/>
+        <click selector="{{AdminEditAttributeStorefrontPropertiesSection.storeFrontPropertiesTab}}" stepKey="clickStoreFrontPropertiesTab"/>
+        <waitForElementVisible selector="{{AdminEditAttributeStorefrontPropertiesSection.useForPromoRuleConditions}}" stepKey="waitForUseForPromoRuleConditionsVisible"/>
+        <selectOption selector="{{AdminEditAttributeStorefrontPropertiesSection.useForPromoRuleConditions}}" userInput="{{useForPromoRule}}" stepKey="changeOption"/>
         <click selector="{{AttributePropertiesSection.save}}" stepKey="saveAttribute"/>
+        <waitForElementVisible selector="{{AdminMessagesSection.successMessage}}" stepKey="waitForSuccessMessage"/>
         <see selector="{{AdminMessagesSection.successMessage}}" userInput="You saved the product attribute." stepKey="successMessage"/>
     </actionGroup>
     <actionGroup name="navigateToProductAttributeByCode">
@@ -80,9 +82,13 @@
             <argument name="attributeType" type="string" defaultValue="select"/>
         </arguments>
         <amOnPage url="{{AdminProductAttributeNewPage.url}}" stepKey="goToNewProductAttributePage"/>
+        <waitForPageLoad stepKey="waitForProductAttributeNewPageLoad"/>
         <fillField selector="{{AttributePropertiesSection.defaultLabel}}" userInput="{{attributeCode}}" stepKey="fillDefaultLabel"/>
         <selectOption selector="{{AttributePropertiesSection.inputType}}" userInput="{{attributeType}}" stepKey="selectInputType"/>
         <waitForElementVisible selector="{{AdminNewAttributePanelSection.addOption}}" stepKey="waitForElementVisible"/>
+    </actionGroup>
+    <actionGroup name="AdminFillProductAttributePropertiesActionGroup" extends="StartCreateProductAttribute">
+        <remove keyForRemoval="waitForElementVisible"/>
     </actionGroup>
     <actionGroup name="AddOptionToProductAttribute">
         <arguments>

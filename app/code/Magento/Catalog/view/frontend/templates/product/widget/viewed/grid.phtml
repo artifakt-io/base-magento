@@ -5,16 +5,15 @@
  */
 ?>
 <?php
-/**
- * @var $block \Magento\Ui\Block\Wrapper
- */
+/** @var $block \Magento\Ui\Block\Wrapper */
 ?>
 
-<?= /* @escapeNotVerified */ $block->renderApp([
+<?= /* @noEscape */ $block->renderApp([
     'widget_columns' => [
         'displayMode' => 'grid'
     ],
     'image' => [
         'imageCode' => 'recently_viewed_products_grid_content_widget'
     ]
-]);
+]); ?>
+<?php

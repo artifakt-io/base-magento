@@ -9,6 +9,10 @@ namespace Magento\Framework\Session;
 
 use Magento\Framework\App\State;
 
+/**
+ * Class SidResolver
+ * @deprecated 2.2.10 SIDs in URLs are no longer used
+ */
 class SidResolver implements SidResolverInterface
 {
     /**
@@ -86,8 +90,12 @@ class SidResolver implements SidResolverInterface
     }
 
     /**
+     * Get Sid
+     *
      * @param SessionManagerInterface $session
+     *
      * @return string|null
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function getSid(SessionManagerInterface $session)
     {
@@ -96,6 +104,7 @@ class SidResolver implements SidResolverInterface
         }
 
         $sidKey = null;
+
         $useSidOnFrontend = $this->getUseSessionInUrl();
         if ($useSidOnFrontend && $this->request->getQuery(
             $this->getSessionIdQueryParam($session),
@@ -168,7 +177,7 @@ class SidResolver implements SidResolverInterface
         if ($this->_useSessionInUrl === null) {
             //Using config value by default, can be overridden by using the
             //setter.
-            $this->_useSessionInUrl = (bool)$this->scopeConfig->getValue(
+            $this->_useSessionInUrl = $this->scopeConfig->isSetFlag(
                 self::XML_PATH_USE_FRONTEND_SID,
                 $this->_scopeType
             );

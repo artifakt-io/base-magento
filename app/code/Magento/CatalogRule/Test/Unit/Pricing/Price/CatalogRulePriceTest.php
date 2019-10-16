@@ -155,7 +155,7 @@ class CatalogRulePriceTest extends \PHPUnit\Framework\TestCase
      */
     public function testGetValue()
     {
-        $coreStoreId = 1;
+        $storeId = 5;
         $coreWebsiteId = 1;
         $productId = 1;
         $customerGroupId = 1;
@@ -166,13 +166,13 @@ class CatalogRulePriceTest extends \PHPUnit\Framework\TestCase
 
         $this->coreStoreMock->expects($this->once())
             ->method('getId')
-            ->will($this->returnValue($coreStoreId));
+            ->willReturn($storeId);
         $this->coreStoreMock->expects($this->once())
             ->method('getWebsiteId')
             ->will($this->returnValue($coreWebsiteId));
         $this->dataTimeMock->expects($this->once())
             ->method('scopeDate')
-            ->with($this->equalTo($coreStoreId))
+            ->with($storeId)
             ->will($this->returnValue($dateTime));
         $this->customerSessionMock->expects($this->once())
             ->method('getCustomerGroupId')

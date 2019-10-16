@@ -4,8 +4,6 @@
  * See COPYING.txt for license details.
  */
 
-// @codingStandardsIgnoreFile
-
 /**
  * Test class for \Magento\CatalogImportExport\Model\Import\Product
  *
@@ -29,6 +27,7 @@ use Magento\ImportExport\Model\Import\ErrorProcessing\ProcessingErrorAggregatorI
 use Magento\Store\Model\Store;
 use Psr\Log\LoggerInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\ImportExport\Model\Import\Source\Csv;
 
 /**
  * Class ProductTest
@@ -106,6 +105,7 @@ class ProductTest extends \Magento\TestFramework\Indexer\TestCase
             try {
                 $product = $productRepository->get($productSku, false, null, true);
                 $productRepository->delete($product);
+                // phpcs:disable Magento2.CodeAnalysis.EmptyBlock.DetectedCatch
             } catch (NoSuchEntityException $e) {
                 // nothing to delete
             }
@@ -1589,6 +1589,35 @@ class ProductTest extends \Magento\TestFramework\Indexer\TestCase
      * @magentoDbIsolation enabled
      * @magentoAppIsolation enabled
      */
+    public function testImportWithoutChangingUrlKeys()
+    {
+        $filesystem = $this->objectManager->create(Filesystem::class);
+        $directory = $filesystem->getDirectoryWrite(DirectoryList::ROOT);
+        $source = $this->objectManager->create(
+            Csv::class,
+            [
+                'file' => __DIR__ . '/_files/products_to_import_without_url_key_column.csv',
+                'directory' => $directory
+            ]
+        );
+
+        $errors = $this->_model->setParameters(
+            ['behavior' => Import::BEHAVIOR_APPEND, 'entity' => 'catalog_product']
+        )
+            ->setSource($source)
+            ->validateData();
+
+        $this->assertTrue($errors->getErrorsCount() == 0);
+        $this->_model->importData();
+        $productRepository = $this->objectManager->create(ProductRepositoryInterface::class);
+        $this->assertEquals('url-key', $productRepository->get('simple1')->getUrlKey());
+    }
+
+    /**
+     * @magentoDataFixture Magento/Catalog/_files/product_simple_with_url_key.php
+     * @magentoDbIsolation enabled
+     * @magentoAppIsolation enabled
+     */
     public function testImportWithoutUrlKeys()
     {
         $products = [
@@ -1906,13 +1935,17 @@ class ProductTest extends \Magento\TestFramework\Indexer\TestCase
 
         $product1 = $productRepository->get('simple1');
         $this->assertEquals('\'", =|', $product1->getData('text_attribute'));
-        $this->assertEquals(implode(',', [$multiselectOptions[3]->getValue(), $multiselectOptions[2]->getValue()]),
-            $product1->getData('multiselect_attribute'));
+        $this->assertEquals(
+            implode(',', [$multiselectOptions[3]->getValue(), $multiselectOptions[2]->getValue()]),
+            $product1->getData('multiselect_attribute')
+        );
 
         $product2 = $productRepository->get('simple2');
         $this->assertEquals('', $product2->getData('text_attribute'));
-        $this->assertEquals(implode(',', [$multiselectOptions[1]->getValue(), $multiselectOptions[2]->getValue()]),
-            $product2->getData('multiselect_attribute'));
+        $this->assertEquals(
+            implode(',', [$multiselectOptions[1]->getValue(), $multiselectOptions[2]->getValue()]),
+            $product2->getData('multiselect_attribute')
+        );
     }
 
     /**
@@ -2137,7 +2170,6 @@ class ProductTest extends \Magento\TestFramework\Indexer\TestCase
      * @magentoDataFixture Magento/Catalog/_files/attribute_set_with_renamed_group.php
      * @magentoDataFixture Magento/Catalog/_files/product_without_options.php
      * @magentoDataFixture Magento/Catalog/_files/second_product_simple.php
-     *
      */
     public function testImportDataChangeAttributeSet()
     {
@@ -2154,7 +2186,7 @@ class ProductTest extends \Magento\TestFramework\Indexer\TestCase
         );
         $errors = $this->_model->setParameters(
             [
-                'behavior' => \Magento\ImportExport\Model\Import::BEHAVIOR_ADD_UPDATE,
+                'behavior' => \Magento\ImportExport\Model\Import::BEHAVIOR_APPEND,
                 'entity' => \Magento\Catalog\Model\Product::ENTITY
             ]
         )->setSource(
@@ -2294,6 +2326,8 @@ class ProductTest extends \Magento\TestFramework\Indexer\TestCase
      */
     public function testProductsWithMultipleStoresWhenMediaIsDisabled()
     {
+        $this->loginAdminUserWithUsername(\Magento\TestFramework\Bootstrap::ADMIN_NAME);
+
         $filesystem = $this->objectManager->create(\Magento\Framework\Filesystem::class);
         $directory = $filesystem->getDirectoryWrite(DirectoryList::ROOT);
         $source = $this->objectManager->create(
@@ -2530,5 +2564,23 @@ class ProductTest extends \Magento\TestFramework\Indexer\TestCase
 
         $stockItem = $stockRegistry->getStockItem($product->getId());
         $this->assertEquals(17, $stockItem->getQty());
+    }
+
+    /**
+     * Set the current admin session user based on a username
+     *
+     * @param string $username
+     */
+    private function loginAdminUserWithUsername(string $username)
+    {
+        $user = \Magento\TestFramework\Helper\Bootstrap::getObjectManager()->create(
+            \Magento\User\Model\User::class
+        )->loadByUsername($username);
+
+        /** @var $session \Magento\Backend\Model\Auth\Session */
+        $session = \Magento\TestFramework\Helper\Bootstrap::getObjectManager()->get(
+            \Magento\Backend\Model\Auth\Session::class
+        );
+        $session->setUser($user);
     }
 }

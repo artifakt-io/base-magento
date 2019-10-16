@@ -35,7 +35,19 @@ return [
     ],
     'eval' => [
         'replacement' => '',
-        'exclude' => []
+        'exclude' => [
+            // allowing in this file so that an error isn't raised for its use of the JS eval function
+            [
+                'type' => 'module',
+                'name' => 'Magento_Config',
+                'path' => 'view/adminhtml/templates/system/config/js.phtml'
+            ],
+            [
+                'type' => 'module',
+                'name' => 'Magento_Catalog',
+                'path' => 'view/adminhtml/templates/catalog/wysiwyg/js.phtml'
+            ]
+        ]
     ],
     'md5' => [
         'replacement' => '',
@@ -49,6 +61,11 @@ return [
                 'type' => 'module',
                 'name' => 'Magento_Support',
                 'path' => 'Console/Command/AbstractBackupDumpCommand.php'
+            ],
+            [
+                'type' => 'module',
+                'name' => 'Magento_Catalog',
+                'path' => 'view/adminhtml/templates/catalog/product/edit/serializer.phtml'
             ],
             [
                 'type' => 'module',
@@ -105,6 +122,12 @@ return [
                 'type' => 'setup',
                 'path' => 'src/Magento/Setup/Fixtures/SimpleProductsFixture.php'
             ],
+        ]
+    ],
+    'htmlspecialchars' => [
+        'replacement' => '\Magento\Framework\Escaper::escapeHtml',
+        'exclude' => [
+            ['type' => 'library', 'name' => 'magento/framework', 'path' => 'Escaper.php'],
         ]
     ],
 ];

@@ -3,16 +3,12 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
-
- //@codingStandardsIgnoreFile
 ?>
 <?php
-/**
- * @var $block \Magento\Ui\Block\Wrapper
- */
+/** @var $block \Magento\Ui\Block\Wrapper */
 ?>
 
-<?php /* @escapeNotVerified */ echo $block->renderApp(
+<?= /* @noEscape */ $block->renderApp(
     [
         'listing' => [
             'displayMode' => 'grid'
@@ -21,4 +17,5 @@
             'imageCode' => 'recently_viewed_products_images_names_widget'
         ]
     ]
-);
+); ?>
+<?php

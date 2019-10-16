@@ -1,18 +1,14 @@
 <?php
 /**
- * Copyright © Magento, Inc. All rights reserved. 
+ * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
-
- //@codingStandardsIgnoreFile
 ?>
 <?php
-/**
- * @var $block \Magento\Ui\Block\Wrapper
- */
+/** @var $block \Magento\Ui\Block\Wrapper */
 ?>
 
-<?php /* @escapeNotVerified */ echo $block->renderApp(
+<?= /* @noEscape */ $block->renderApp(
     [
         'widget_columns' => [
             'displayMode' => 'grid'
@@ -21,4 +17,5 @@
             'imageCode' => 'recently_compared_products_grid_content_widget'
         ]
     ]
-);
+); ?>
+<?php
