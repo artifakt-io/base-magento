@@ -21,6 +21,7 @@ use Magento\Framework\Reflection\DataObjectProcessor;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Framework\App\ObjectManager;
 use Magento\Framework\Math\Random;
+use Magento\Framework\Indexer\IndexerInterface;
 
 /**
  * Customer model
@@ -62,8 +63,7 @@ class Customer extends \Magento\Framework\Model\AbstractModel
     const XML_PATH_RESET_PASSWORD_TEMPLATE = 'customer/password/reset_password_template';
 
     /**
-     * @deprecated
-     * @see AccountConfirmation::XML_PATH_IS_CONFIRM
+     * @deprecated @see \Magento\Customer\Model\AccountConfirmation::XML_PATH_IS_CONFIRM
      */
     const XML_PATH_IS_CONFIRM = 'customer/create_account/confirm';
 
@@ -228,6 +228,11 @@ class Customer extends \Magento\Framework\Model\AbstractModel
     private $storedAddress;
 
     /**
+     * @var IndexerInterface|null
+     */
+    private $indexer;
+
+    /**
      * @param \Magento\Framework\Model\Context $context
      * @param \Magento\Framework\Registry $registry
      * @param \Magento\Store\Model\StoreManagerInterface $storeManager
@@ -302,6 +307,19 @@ class Customer extends \Magento\Framework\Model\AbstractModel
             $resourceCollection,
             $data
         );
+    }
+
+    /**
+     * Micro-caching optimization
+     *
+     * @return IndexerInterface
+     */
+    private function getIndexer() : IndexerInterface
+    {
+        if ($this->indexer === null) {
+            $this->indexer = $this->indexerRegistry->get(self::CUSTOMER_GRID_INDEXER_ID);
+        }
+        return $this->indexer;
     }
 
     /**
@@ -398,7 +416,9 @@ class Customer extends \Magento\Framework\Model\AbstractModel
     public function authenticate($login, $password)
     {
         $this->loadByEmail($login);
-        if ($this->getConfirmation() && $this->isConfirmationRequired()) {
+        if ($this->getConfirmation() &&
+            $this->accountConfirmation->isConfirmationRequired($this->getWebsiteId(), $this->getId(), $this->getEmail())
+        ) {
             throw new EmailNotConfirmedException(
                 __("This account isn't confirmed. Verify and try again.")
             );
@@ -419,8 +439,9 @@ class Customer extends \Magento\Framework\Model\AbstractModel
     /**
      * Load customer by email
      *
-     * @param   string $customerEmail
-     * @return  $this
+     * @param string $customerEmail
+     * @return $this
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function loadByEmail($customerEmail)
     {
@@ -431,8 +452,9 @@ class Customer extends \Magento\Framework\Model\AbstractModel
     /**
      * Change customer password
      *
-     * @param   string $newPassword
-     * @return  $this
+     * @param string $newPassword
+     * @return $this
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function changePassword($newPassword)
     {
@@ -444,6 +466,7 @@ class Customer extends \Magento\Framework\Model\AbstractModel
      * Get full customer name
      *
      * @return string
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function getName()
     {
@@ -466,8 +489,9 @@ class Customer extends \Magento\Framework\Model\AbstractModel
     /**
      * Add address to address collection
      *
-     * @param   Address $address
-     * @return  $this
+     * @param Address $address
+     * @return $this
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function addAddress(Address $address)
     {
@@ -491,6 +515,7 @@ class Customer extends \Magento\Framework\Model\AbstractModel
      *
      * @param int $addressId
      * @return Address
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function getAddressItemById($addressId)
     {
@@ -511,6 +536,7 @@ class Customer extends \Magento\Framework\Model\AbstractModel
      * Customer addresses collection
      *
      * @return \Magento\Customer\Model\ResourceModel\Address\Collection
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function getAddressesCollection()
     {
@@ -542,6 +568,7 @@ class Customer extends \Magento\Framework\Model\AbstractModel
      * Retrieve all customer attributes
      *
      * @return Attribute[]
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function getAttributes()
     {
@@ -596,6 +623,7 @@ class Customer extends \Magento\Framework\Model\AbstractModel
      *
      * @param string $password
      * @return boolean
+     * @throws \Exception
      */
     public function validatePassword($password)
     {
@@ -976,6 +1004,7 @@ class Customer extends \Magento\Framework\Model\AbstractModel
      */
     public function getAttributeSetId()
     {
+        // phpstan:ignore "Call to an undefined static method*"
         return parent::getAttributeSetId() ?: CustomerMetadataInterface::ATTRIBUTE_SET_ID_CUSTOMER;
     }
 
@@ -1066,8 +1095,7 @@ class Customer extends \Magento\Framework\Model\AbstractModel
      */
     public function afterSave()
     {
-        $indexer = $this->indexerRegistry->get(self::CUSTOMER_GRID_INDEXER_ID);
-        if ($indexer->getState()->getStatus() == StateInterface::STATUS_VALID) {
+        if ($this->getIndexer()->getState()->getStatus() == StateInterface::STATUS_VALID) {
             $this->_getResource()->addCommitCallback([$this, 'reindex']);
         }
         return parent::afterSave();
@@ -1091,9 +1119,7 @@ class Customer extends \Magento\Framework\Model\AbstractModel
      */
     public function reindex()
     {
-        /** @var \Magento\Framework\Indexer\IndexerInterface $indexer */
-        $indexer = $this->indexerRegistry->get(self::CUSTOMER_GRID_INDEXER_ID);
-        $indexer->reindexRow($this->getId());
+        $this->getIndexer()->reindexRow($this->getId());
     }
 
     /**

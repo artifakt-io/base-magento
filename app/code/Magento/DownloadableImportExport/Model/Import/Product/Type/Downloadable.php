@@ -15,7 +15,9 @@ use \Magento\Store\Model\Store;
 /**
  * Class Downloadable
  *
+ * phpcs:disable Magento2.Commenting.ConstantsPHPDocFormatting
  * @SuppressWarnings(PHPMD.TooManyFields)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class Downloadable extends \Magento\CatalogImportExport\Model\Import\Product\Type\AbstractType
 {
@@ -331,7 +333,7 @@ class Downloadable extends \Magento\CatalogImportExport\Model\Import\Product\Typ
     {
         $this->rowNum = $rowNum;
         $error = false;
-        if (!$this->downloadableHelper->isRowDownloadableNoValid($rowData)) {
+        if (!$this->downloadableHelper->isRowDownloadableNoValid($rowData) && $isNewProduct) {
             $this->_entityModel->addRowError(self::ERROR_OPTIONS_NOT_FOUND, $this->rowNum);
             $error = true;
         }
@@ -363,11 +365,6 @@ class Downloadable extends \Magento\CatalogImportExport\Model\Import\Product\Typ
         }
 
         $sampleData = $this->prepareSampleData($rowData[static::COL_DOWNLOADABLE_SAMPLES]);
-
-        if ($this->sampleGroupTitle($rowData) == '') {
-            $result = true;
-            $this->_entityModel->addRowError(self::ERROR_GROUP_TITLE_NOT_FOUND, $this->rowNum);
-        }
 
         $result = $result ?? $this->isTitle($sampleData);
 
@@ -404,11 +401,6 @@ class Downloadable extends \Magento\CatalogImportExport\Model\Import\Product\Typ
         }
 
         $linkData = $this->prepareLinkData($rowData[self::COL_DOWNLOADABLE_LINKS]);
-
-        if ($this->linksAdditionalAttributes($rowData, 'group_title', self::DEFAULT_GROUP_TITLE) == '') {
-            $this->_entityModel->addRowError(self::ERROR_GROUP_TITLE_NOT_FOUND, $this->rowNum);
-            $result = true;
-        }
 
         $result = $result ?? $this->isTitle($linkData);
 
@@ -786,6 +778,7 @@ class Downloadable extends \Magento\CatalogImportExport\Model\Import\Product\Typ
             $rowCol
         );
         foreach ($options as $option) {
+            // phpcs:ignore Magento2.Performance.ForeachArrayMerge
             $result[] = array_merge(
                 $this->dataSample,
                 ['product_id' => $entityId],
@@ -810,6 +803,7 @@ class Downloadable extends \Magento\CatalogImportExport\Model\Import\Product\Typ
             $rowCol
         );
         foreach ($options as $option) {
+            // phpcs:ignore Magento2.Performance.ForeachArrayMerge
             $result[] = array_merge(
                 $this->dataLink,
                 ['product_id' => $entityId],
@@ -893,12 +887,16 @@ class Downloadable extends \Magento\CatalogImportExport\Model\Import\Product\Typ
     protected function uploadDownloadableFiles($fileName, $type = 'links', $renameFileOff = false)
     {
         try {
-            $res = $this->uploaderHelper->getUploader($type, $this->parameters)->move($fileName, $renameFileOff);
-            return $res['file'];
+            $uploader = $this->uploaderHelper->getUploader($type, $this->parameters);
+            if (!$this->uploaderHelper->isFileExist($fileName)) {
+                $res = $uploader->move($fileName, $renameFileOff);
+                $fileName = $res['file'];
+            }
         } catch (\Exception $e) {
             $this->_entityModel->addRowError(self::ERROR_MOVE_FILE, $this->rowNum);
-            return '';
+            $fileName = '';
         }
+        return $fileName;
     }
 
     /**

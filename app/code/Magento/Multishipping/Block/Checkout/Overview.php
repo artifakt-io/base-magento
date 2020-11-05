@@ -3,17 +3,23 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
+
 namespace Magento\Multishipping\Block\Checkout;
 
+use Magento\Captcha\Block\Captcha;
+use Magento\Checkout\Model\CaptchaPaymentProcessingRateLimiter;
 use Magento\Framework\Pricing\PriceCurrencyInterface;
 use Magento\Quote\Model\Quote\Address;
+use Magento\Checkout\Helper\Data as CheckoutHelper;
+use Magento\Framework\App\ObjectManager;
 
 /**
  * Multishipping checkout overview information
  *
  * @api
- * @author     Magento Core Team <core@magentocommerce.com>
- * @since 100.0.2
+ * @author Magento Core Team <core@magentocommerce.com>
+ * @since  100.0.2
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class Overview extends \Magento\Sales\Block\Items\AbstractItems
 {
@@ -48,13 +54,14 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     protected $totalsReader;
 
     /**
-     * @param \Magento\Framework\View\Element\Template\Context $context
+     * @param \Magento\Framework\View\Element\Template\Context         $context
      * @param \Magento\Multishipping\Model\Checkout\Type\Multishipping $multishipping
-     * @param \Magento\Tax\Helper\Data $taxHelper
-     * @param PriceCurrencyInterface $priceCurrency
-     * @param \Magento\Quote\Model\Quote\TotalsCollector $totalsCollector
-     * @param \Magento\Quote\Model\Quote\TotalsReader $totalsReader
-     * @param array $data
+     * @param \Magento\Tax\Helper\Data                                 $taxHelper
+     * @param PriceCurrencyInterface                                   $priceCurrency
+     * @param \Magento\Quote\Model\Quote\TotalsCollector               $totalsCollector
+     * @param \Magento\Quote\Model\Quote\TotalsReader                  $totalsReader
+     * @param array                                                    $data
+     * @param CheckoutHelper|null                                      $checkoutHelper
      */
     public function __construct(
         \Magento\Framework\View\Element\Template\Context $context,
@@ -63,15 +70,49 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
         PriceCurrencyInterface $priceCurrency,
         \Magento\Quote\Model\Quote\TotalsCollector $totalsCollector,
         \Magento\Quote\Model\Quote\TotalsReader $totalsReader,
-        array $data = []
+        array $data = [],
+        ?CheckoutHelper $checkoutHelper = null
     ) {
         $this->_taxHelper = $taxHelper;
         $this->_multishipping = $multishipping;
         $this->priceCurrency = $priceCurrency;
+        $data['taxHelper'] = $this->_taxHelper;
+        $data['checkoutHelper'] = $checkoutHelper ?? ObjectManager::getInstance()->get(CheckoutHelper::class);
         parent::__construct($context, $data);
         $this->_isScopePrivate = true;
         $this->totalsCollector = $totalsCollector;
         $this->totalsReader = $totalsReader;
+    }
+
+    /**
+     * Overwrite the total value of shipping amount for viewing purpose
+     *
+     * @param  array $totals
+     * @return mixed
+     * @throws \Exception
+     */
+    private function getMultishippingTotals($totals)
+    {
+        if (isset($totals['shipping']) && !empty($totals['shipping'])) {
+            $total = $totals['shipping'];
+            $shippingMethod = $total->getAddress()->getShippingMethod();
+            if (isset($shippingMethod) && !empty($shippingMethod)) {
+                $shippingRate = $total->getAddress()->getShippingRateByCode($shippingMethod);
+                $shippingPrice = $shippingRate->getPrice();
+            } else {
+                $shippingPrice = $total->getAddress()->getShippingAmount();
+            }
+            /**
+             * @var \Magento\Store\Api\Data\StoreInterface
+             */
+            $store = $this->getQuote()->getStore();
+            $amountPrice = $store->getBaseCurrency()
+                ->convert($shippingPrice, $store->getCurrentCurrencyCode());
+            $total->setBaseShippingAmount($shippingPrice);
+            $total->setShippingAmount($amountPrice);
+            $total->setValue($amountPrice);
+        }
+        return $totals;
     }
 
     /**
@@ -84,6 +125,20 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
         $this->pageConfig->getTitle()->set(
             __('Review Order - %1', $this->pageConfig->getTitle()->getDefault())
         );
+        if (!$this->getChildBlock('captcha')) {
+            $this->addChild(
+                'captcha',
+                Captcha::class,
+                [
+                    'cacheable' => false,
+                    'after' => '-',
+                    'form_id' => CaptchaPaymentProcessingRateLimiter::CAPTCHA_FORM,
+                    'image_width' => 230,
+                    'image_height' => 230
+                ]
+            );
+        }
+
         return parent::_prepareLayout();
     }
 
@@ -98,6 +153,8 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     }
 
     /**
+     * Get billing address
+     *
      * @return Address
      */
     public function getBillingAddress()
@@ -106,6 +163,8 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     }
 
     /**
+     * Get payment info
+     *
      * @return string
      */
     public function getPaymentHtml()
@@ -124,6 +183,8 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     }
 
     /**
+     * Get shipping addresses
+     *
      * @return array
      */
     public function getShippingAddresses()
@@ -132,6 +193,8 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     }
 
     /**
+     * Get number of shipping addresses
+     *
      * @return int|mixed
      */
     public function getShippingAddressCount()
@@ -145,8 +208,10 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     }
 
     /**
-     * @param Address $address
-     * @return bool
+     * Get shipping address rate
+     *
+     * @param                                        Address $address
+     * @return                                       bool
      * @SuppressWarnings(PHPMD.BooleanGetMethodName)
      */
     public function getShippingAddressRate($address)
@@ -159,27 +224,36 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     }
 
     /**
-     * @param Address $address
+     * Get shipping price including tax
+     *
+     * @param  Address $address
      * @return mixed
      */
     public function getShippingPriceInclTax($address)
     {
-        $exclTax = $address->getShippingAmount();
+        $rate = $address->getShippingRateByCode($address->getShippingMethod());
+        $exclTax = $rate->getPrice();
         $taxAmount = $address->getShippingTaxAmount();
         return $this->formatPrice($exclTax + $taxAmount);
     }
 
     /**
-     * @param Address $address
+     * Get shipping price excluding tax
+     *
+     * @param  Address $address
      * @return mixed
      */
     public function getShippingPriceExclTax($address)
     {
-        return $this->formatPrice($address->getShippingAmount());
+        $rate = $address->getShippingRateByCode($address->getShippingMethod());
+        $shippingAmount = $rate->getPrice();
+        return $this->formatPrice($shippingAmount);
     }
 
     /**
-     * @param float $price
+     * Format price
+     *
+     * @param  float $price
      * @return mixed
      *
      * @codeCoverageIgnore
@@ -195,7 +269,9 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     }
 
     /**
-     * @param Address $address
+     * Get shipping address items
+     *
+     * @param  Address $address
      * @return array
      */
     public function getShippingAddressItems($address): array
@@ -204,7 +280,9 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     }
 
     /**
-     * @param Address $address
+     * Get shipping address totals
+     *
+     * @param  Address $address
      * @return mixed
      */
     public function getShippingAddressTotals($address)
@@ -223,6 +301,8 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     }
 
     /**
+     * Get total price
+     *
      * @return float
      */
     public function getTotal()
@@ -231,6 +311,8 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     }
 
     /**
+     * Get the Edit addresses URL
+     *
      * @return string
      */
     public function getAddressesEditUrl()
@@ -239,7 +321,9 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     }
 
     /**
-     * @param Address $address
+     * Get the Edit shipping address URL
+     *
+     * @param  Address $address
      * @return string
      */
     public function getEditShippingAddressUrl($address)
@@ -248,7 +332,9 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     }
 
     /**
-     * @param Address $address
+     * Get the Edit billing address URL
+     *
+     * @param  Address $address
      * @return string
      */
     public function getEditBillingAddressUrl($address)
@@ -257,6 +343,8 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     }
 
     /**
+     * Get the Edit shipping URL
+     *
      * @return string
      */
     public function getEditShippingUrl()
@@ -265,6 +353,8 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     }
 
     /**
+     * Get Post ACtion URL
+     *
      * @return string
      */
     public function getPostActionUrl()
@@ -273,6 +363,8 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     }
 
     /**
+     * Get the Edit billing URL
+     *
      * @return string
      */
     public function getEditBillingUrl()
@@ -281,6 +373,8 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     }
 
     /**
+     * Get back button URL
+     *
      * @return string
      */
     public function getBackUrl()
@@ -319,9 +413,11 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     }
 
     /**
+     * Get billin address totals
+     *
+     * @return     mixed
      * @deprecated 100.2.3
      * typo in method name, see getBillingAddressTotals()
-     * @return mixed
      */
     public function getBillinAddressTotals()
     {
@@ -329,6 +425,8 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     }
 
     /**
+     * Get billing address totals
+     *
      * @return mixed
      * @since 100.2.3
      */
@@ -339,12 +437,17 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     }
 
     /**
-     * @param mixed $totals
-     * @param null $colspan
+     * Render total block
+     *
+     * @param  mixed $totals
+     * @param  null  $colspan
      * @return string
      */
     public function renderTotals($totals, $colspan = null)
     {
+        //check if the shipment is multi shipment
+        $totals = $this->getMultishippingTotals($totals);
+
         if ($colspan === null) {
             $colspan = 3;
         }
@@ -369,7 +472,7 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     /**
      * Return row-level item html
      *
-     * @param \Magento\Framework\DataObject $item
+     * @param  \Magento\Framework\DataObject $item
      * @return string
      */
     public function getRowItemHtml(\Magento\Framework\DataObject $item)
@@ -383,7 +486,7 @@ class Overview extends \Magento\Sales\Block\Items\AbstractItems
     /**
      * Retrieve renderer block for row-level item output
      *
-     * @param string $type
+     * @param  string $type
      * @return \Magento\Framework\View\Element\AbstractBlock
      */
     protected function _getRowItemRenderer($type)

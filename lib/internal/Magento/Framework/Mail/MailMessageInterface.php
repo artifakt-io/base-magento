@@ -9,6 +9,8 @@ namespace Magento\Framework\Mail;
  * Mail Message interface
  *
  * @api
+ * @deprecated 102.0.4
+ * @see \Magento\Framework\Mail\EmailMessageInterface
  * @since 101.0.8
  */
 interface MailMessageInterface extends MessageInterface

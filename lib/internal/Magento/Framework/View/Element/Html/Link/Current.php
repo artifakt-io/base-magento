@@ -25,6 +25,11 @@ use Magento\Framework\View\Element\Template\Context;
 class Current extends Template
 {
     /**
+     * Search redundant /index and / in url
+     */
+    private const REGEX_INDEX_URL_PATTERN = '/(\/index|(\/))+($|\/$)/';
+
+    /**
      * Default path
      *
      * @var DefaultPathInterface
@@ -88,7 +93,31 @@ class Current extends Template
      */
     public function isCurrent()
     {
-        return $this->getCurrent() || $this->getUrl($this->getPath()) == $this->getUrl($this->getMca());
+        $urlByPath = preg_replace(self::REGEX_INDEX_URL_PATTERN, '', $this->getUrl($this->getPath()));
+        return $this->getCurrent() ||
+            ($urlByPath == preg_replace(self::REGEX_INDEX_URL_PATTERN, '', $this->getUrl($this->getMca()))) ||
+            $this->isCurrentCmsUrl($urlByPath);
+    }
+
+    /**
+     * Get Current displayed page url
+     *
+     * @return string
+     */
+    private function getCurrentUrl()
+    {
+        return $this->getUrl('*/*/*', ['_current' => false, '_use_rewrite' => true]);
+    }
+
+    /**
+     * Check if link URL equivalent to URL of currently displayed CMS page
+     *
+     * @param string $urlByPath
+     * @return bool
+     */
+    private function isCurrentCmsUrl($urlByPath)
+    {
+        return ($urlByPath == preg_replace(self::REGEX_INDEX_URL_PATTERN, '', $this->getCurrentUrl()));
     }
 
     /**

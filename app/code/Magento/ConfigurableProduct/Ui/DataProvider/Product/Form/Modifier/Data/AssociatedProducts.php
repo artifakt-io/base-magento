@@ -21,7 +21,7 @@ use Magento\Framework\App\ObjectManager;
 use Magento\Framework\Escaper;
 
 /**
- * Loads data for product configurations.
+ * Associated products helper
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
@@ -215,7 +215,6 @@ class AssociatedProducts
                 'code' => $attribute['code'],
                 'label' => $attribute['label'],
                 'position' => $attribute['position'],
-                '__disableTmpl' => true
             ];
 
             foreach ($attribute['chosen'] as $chosenOption) {
@@ -234,6 +233,7 @@ class AssociatedProducts
      *
      * @return void
      * @throws \Zend_Currency_Exception
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * phpcs:disable Generic.Metrics.NestingLevel.TooHigh
      */
     protected function prepareVariations()
@@ -265,17 +265,16 @@ class AssociatedProducts
                                 'id' => $attribute->getAttributeId(),
                                 'position' => $configurableAttributes[$attribute->getAttributeId()]['position'],
                                 'chosen' => [],
-                                '__disableTmpl' => true
                             ];
-                            foreach ($attribute->getOptions() as $option) {
-                                if (!empty($option->getValue())) {
-                                    $attributes[$attribute->getAttributeId()]['options'][$option->getValue()] = [
+                            $options = $attribute->usesSource() ? $attribute->getSource()->getAllOptions() : [];
+                            foreach ($options as $option) {
+                                if (!empty($option['value'])) {
+                                    $attributes[$attribute->getAttributeId()]['options'][$option['value']] = [
                                         'attribute_code' => $attribute->getAttributeCode(),
                                         'attribute_label' => $attribute->getStoreLabel(0),
-                                        'id' => $option->getValue(),
-                                        'label' => $option->getLabel(),
-                                        'value' => $option->getValue(),
-                                        '__disableTmpl' => true
+                                        'id' => $option['value'],
+                                        'label' => $option['label'],
+                                        'value' => $option['value'],
                                     ];
                                 }
                             }
@@ -287,7 +286,6 @@ class AssociatedProducts
                             'id' => $optionId,
                             'label' => $variation[$attribute->getId()]['label'],
                             'value' => $optionId,
-                            '__disableTmpl' => true
                         ];
                         $variationOptions[] = $variationOption;
                         $attributes[$attribute->getAttributeId()]['chosen'][$optionId] = $variationOption;
@@ -313,7 +311,6 @@ class AssociatedProducts
                         'newProduct' => 0,
                         'attributes' => $this->getTextAttributes($variationOptions),
                         'thumbnail_image' => $this->imageHelper->init($product, 'product_thumbnail_image')->getUrl(),
-                        '__disableTmpl' => true
                     ];
                     $productIds[] = $product->getId();
                 }

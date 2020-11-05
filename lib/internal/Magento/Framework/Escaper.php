@@ -42,7 +42,12 @@ class Escaper
     /**
      * @var string[]
      */
-    private $allowedAttributes = ['id', 'class', 'href', 'target', 'title', 'style'];
+    private $allowedAttributes = ['id', 'class', 'href', 'title', 'style'];
+
+    /**
+     * @var array
+     */
+    private $notAllowedAttributes = ['a' => ['style']];
 
     /**
      * @var string
@@ -95,7 +100,6 @@ class Escaper
                     $domDocument->loadHTML(
                         '<html><body id="' . $wrapperElementId . '">' . $string . '</body></html>'
                     );
-                    // phpcs:disable Magento2.Exceptions.ThrowCatch
                 } catch (\Exception $e) {
                     restore_error_handler();
                     $this->getLogger()->critical($e);
@@ -169,6 +173,16 @@ class Escaper
         );
         foreach ($nodes as $node) {
             $node->parentNode->removeAttribute($node->nodeName);
+        }
+
+        foreach ($this->notAllowedAttributes as $tag => $attributes) {
+            $nodes = $xpath->query(
+                '//@*[name() =\'' . implode('\' or name() = \'', $attributes) . '\']'
+                . '[parent::node()[name() = \'' . $tag . '\']]'
+            );
+            foreach ($nodes as $node) {
+                $node->parentNode->removeAttribute($node->nodeName);
+            }
         }
     }
 
@@ -312,9 +326,9 @@ class Escaper
     }
 
     /**
-     * Escape quotes in java script
+     * Escape single quotes/apostrophes ('), or other specified $quote character in javascript
      *
-     * @param string|array $data
+     * @param string|string[]|array $data
      * @param string $quote
      * @return string|array
      * @deprecated 101.0.0
@@ -360,8 +374,16 @@ class Escaper
      */
     private function escapeScriptIdentifiers(string $data): string
     {
-        $filteredData = preg_replace('/[\x00-\x1F\x7F\xA0]/u', '', $data) ?: '';
-        $filteredData = preg_replace(self::$xssFiltrationPattern, ':', $filteredData) ?: '';
+        $filteredData = preg_replace('/[\x00-\x1F\x7F\xA0]/u', '', $data);
+        if ($filteredData === false || $filteredData === '') {
+            return '';
+        }
+
+        $filteredData = preg_replace(self::$xssFiltrationPattern, ':', $filteredData);
+        if ($filteredData === false) {
+            return '';
+        }
+
         if (preg_match(self::$xssFiltrationPattern, $filteredData)) {
             $filteredData = $this->escapeScriptIdentifiers($filteredData);
         }
