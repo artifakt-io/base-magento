@@ -3,6 +3,7 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
 
 namespace Magento\Customer\Observer;
 
@@ -17,6 +18,7 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\State as AppState;
 use Magento\Framework\DataObject;
 use Magento\Framework\Escaper;
+use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Message\ManagerInterface;
 use Magento\Framework\Registry;
@@ -115,11 +117,11 @@ class AfterAddressSaveObserver implements ObserverInterface
     /**
      * Address after save event handler
      *
-     * @param \Magento\Framework\Event\Observer $observer
+     * @param Observer $observer
      * @return void
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
-    public function execute(\Magento\Framework\Event\Observer $observer)
+    public function execute(Observer $observer)
     {
         /** @var $customerAddress Address */
         $customerAddress = $observer->getCustomerAddress();
@@ -139,7 +141,8 @@ class AfterAddressSaveObserver implements ObserverInterface
             if ($customerAddress->getVatId() == ''
                 || !$this->_customerVat->isCountryInEU($customerAddress->getCountry())
             ) {
-                $defaultGroupId = $this->_groupManagement->getDefaultGroup($customer->getStore())->getId();
+                $defaultGroupId = $customer->getGroupId() ? $customer->getGroupId() :
+                    $this->_groupManagement->getDefaultGroup($customer->getStore())->getId();
                 if (!$customer->getDisableAutoGroupChange() && $customer->getGroupId() != $defaultGroupId) {
                     $customer->setGroupId($defaultGroupId);
                     $customer->save();
@@ -214,8 +217,8 @@ class AfterAddressSaveObserver implements ObserverInterface
     protected function _isDefaultBilling($address)
     {
         return $address->getId() && $address->getId() == $address->getCustomer()->getDefaultBilling()
-        || $address->getIsPrimaryBilling()
-        || $address->getIsDefaultBilling();
+            || $address->getIsPrimaryBilling()
+            || $address->getIsDefaultBilling();
     }
 
     /**
@@ -227,8 +230,8 @@ class AfterAddressSaveObserver implements ObserverInterface
     protected function _isDefaultShipping($address)
     {
         return $address->getId() && $address->getId() == $address->getCustomer()->getDefaultShipping()
-        || $address->getIsPrimaryShipping()
-        || $address->getIsDefaultShipping();
+            || $address->getIsPrimaryShipping()
+            || $address->getIsDefaultShipping();
     }
 
     /**
@@ -282,7 +285,7 @@ class AfterAddressSaveObserver implements ObserverInterface
             $message[] = (string)__('You will be charged tax.');
         }
 
-        $this->messageManager->addError(implode(' ', $message));
+        $this->messageManager->addErrorMessage(implode(' ', $message));
 
         return $this;
     }
@@ -309,7 +312,7 @@ class AfterAddressSaveObserver implements ObserverInterface
         $email = $this->scopeConfig->getValue('trans_email/ident_support/email', ScopeInterface::SCOPE_STORE);
         $message[] = (string)__('If you believe this is an error, please contact us at %1', $email);
 
-        $this->messageManager->addError(implode(' ', $message));
+        $this->messageManager->addErrorMessage(implode(' ', $message));
 
         return $this;
     }

@@ -61,7 +61,7 @@ class FlushCacheByTagsTest extends TestCase
     /**
      * @return void
      */
-    public function testAroundSave(): void
+    public function testAfterSave(): void
     {
         $resource = $this->getMockBuilder(AbstractResource::class)
             ->disableOriginalConstructor()
@@ -71,11 +71,9 @@ class FlushCacheByTagsTest extends TestCase
             ->getMockForAbstractClass();
         $this->tagResolver->expects($this->atLeastOnce())->method('getTags')->with($model)->willReturn([]);
 
-        $result = $this->plugin->aroundSave(
+        $result = $this->plugin->afterSave(
             $resource,
-            function () use ($resource) {
-                return $resource;
-            },
+            $resource,
             $model
         );
 

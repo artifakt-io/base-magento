@@ -9,12 +9,13 @@
     "config": {
         "sort-packages": true
     },
-    "version": "100.4.0",
+    "version": "100.4.1",
     "require": {
         "php": "~7.3.0||~7.4.0",
         "magento/framework": "103.0.*",
         "magento/module-checkout": "100.4.*",
-        "magento/module-payment": "100.4.*"
+        "magento/module-payment": "100.4.*",
+        "magento/module-quote": "101.2.*"
     },
     "suggest": {
         "magento/module-config": "101.2.*"

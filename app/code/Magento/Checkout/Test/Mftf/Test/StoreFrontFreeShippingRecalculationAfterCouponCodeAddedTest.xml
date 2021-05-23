@@ -7,9 +7,9 @@
 -->
 <tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
-    <test name="StoreFrontFreeShippingRecalculationAfterCouponCodeAddedTest">
+    <test name="StoreFrontFreeShippingRecalculationAfterCouponCodeAddedTest" deprecated="Use StoreFrontFreeShippingRecalculationAfterCouponCodeAppliedTest instead">
         <annotations>
-            <title value="Checkout Free Shipping Recalculation after Coupon Code Added"/>
+            <title value="DEPRECATED. Checkout Free Shipping Recalculation after Coupon Code Added"/>
             <stories value="Checkout Free Shipping Recalculation after Coupon Code Added"/>
             <description value="User should be able to do checkout free shipping recalculation after adding coupon code"/>
             <features value="Checkout"/>
@@ -17,6 +17,9 @@
             <testCaseId value="MAGETWO-96537"/>
             <useCaseId value="MAGETWO-96431"/>
             <group value="Checkout"/>
+            <skip>
+                <issueId value="DEPRECATED">Use StoreFrontFreeShippingRecalculationAfterCouponCodeAppliedTest instead</issueId>
+            </skip>
         </annotations>
 
         <before>
@@ -78,7 +81,7 @@
         <actionGroup ref="GoToCheckoutFromMinicartActionGroup" stepKey="goToCheckoutFromMinicart2"/>
         <waitForPageLoad stepKey="waitForShippingMethods"/>
         <click stepKey="chooseFreeShipping" selector="{{CheckoutShippingMethodsSection.shippingMethodRowByName('Free')}}"/>
-        <click selector="{{CheckoutShippingMethodsSection.next}}" stepKey="clickNext1"/>
+        <actionGroup ref="StorefrontCheckoutClickNextButtonActionGroup" stepKey="clickNext1"/>
         <waitForPageLoad stepKey="waitForReviewAndPayments1"/>
         <conditionalClick selector="{{DiscountSection.DiscountTab}}" dependentSelector="{{DiscountSection.CouponInput}}" visible="false" stepKey="clickIfDiscountTabClosed2"/>
         <waitForPageLoad stepKey="waitForCouponTabOpen2"/>
@@ -88,11 +91,11 @@
         <see userInput="Your coupon was successfully applied." stepKey="seeSuccessMessage"/>
         <click selector="{{CheckoutPaymentSection.placeOrder}}" stepKey="clickPlaceOrder1"/>
         <waitForPageLoad stepKey="waitForError"/>
-        <see stepKey="seeShippingMethodError" userInput="The shipping method is missing. Select the shipping method and try again."/>
+        <seeElementInDOM selector="{{CheckoutHeaderSection.errorMessageContainsText('The shipping method is missing. Select the shipping method and try again.')}}" stepKey="seeShippingMethodError"/>
         <amOnPage stepKey="navigateToShippingPage" url="{{CheckoutShippingPage.url}}"/>
         <waitForPageLoad stepKey="waitForShippingPageLoad"/>
         <click stepKey="chooseFlatRateShipping" selector="{{CheckoutShippingMethodsSection.shippingMethodRowByName('Flat Rate')}}"/>
-        <click selector="{{CheckoutShippingMethodsSection.next}}" stepKey="clickNext2"/>
+        <actionGroup ref="StorefrontCheckoutClickNextButtonActionGroup" stepKey="clickNext2"/>
         <waitForPageLoad stepKey="waitForReviewAndPayments2"/>
         <click selector="{{CheckoutPaymentSection.placeOrder}}" stepKey="clickPlaceOrder2"/>
         <waitForPageLoad stepKey="waitForSuccessfullyPlacedOrder"/>

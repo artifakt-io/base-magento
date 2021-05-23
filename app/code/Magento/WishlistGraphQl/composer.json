@@ -6,10 +6,11 @@
         "OSL-3.0",
         "AFL-3.0"
     ],
-    "version": "100.4.1",
+    "version": "100.4.2",
     "require": {
         "php": "~7.3.0||~7.4.0",
         "magento/framework": "103.0.*",
+        "magento/module-catalog": "104.0.*",
         "magento/module-catalog-graph-ql": "100.4.*",
         "magento/module-wishlist": "101.2.*",
         "magento/module-store": "101.1.*"
