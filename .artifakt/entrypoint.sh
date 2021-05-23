@@ -10,7 +10,7 @@ echo ">>>>>>>>>>>>>> START CUSTOM ENTRYPOINT SCRIPT <<<<<<<<<<<<<<<<< "
 /.artifakt/wait-for-it.sh $ENTRYPOINT_MYSQL_HOST:3306
 
 # https://devdocs.magento.com/guides/v2.4/config-guide/redis/redis-session.html
-if [ ! -f "/var/www/html/app/etc/env.php" ]; then 
+#if [ ! -f "/var/www/html/app/etc/env.php" ]; then 
   echo "File not found, running generation." 
   su www-data -s /bin/bash -c "./bin/magento setup:install --backend-frontname=admin123 \
   --db-host=$ENTRYPOINT_MYSQL_HOST --db-name=$ARTIFAKT_MYSQL_DATABASE_NAME --db-user=$ARTIFAKT_MYSQL_USER --db-password=$ARTIFAKT_MYSQL_PASSWORD \
@@ -22,13 +22,13 @@ if [ ! -f "/var/www/html/app/etc/env.php" ]; then
   --currency=EUR --timezone=Europe/Paris --use-rewrites=1 \
   --search-engine=elasticsearch7 --elasticsearch-host=elasticsearch \
   --elasticsearch-port=9200"  
-fi
+#fi
 
 su www-data -s /bin/bash -c "./bin/magento maintenance:enable"
 su www-data -s /bin/bash -c "./bin/magento deploy:mode:set production"
 su www-data -s /bin/bash -c "./bin/magento setup:upgrade && ./bin/magento setup:di:compile && ./bin/magento setup:static-content:deploy -f fr_FR en_US --no-interaction --jobs 5"
 
-if [ ! -f "/var/www/html/app/etc/env.php" ]; then 
+#if [ ! -f "/var/www/html/app/etc/env.php" ]; then 
   su www-data -s /bin/bash -c "./bin/magento config:set -n web/secure/use_in_adminhtml 1"
   su www-data -s /bin/bash -c "./bin/magento config:set -n web/secure/enable_upgrade_insecure 1"
   #You need to configure Two-Factor Authorization in order to proceed to your store's admin area
@@ -38,7 +38,7 @@ if [ ! -f "/var/www/html/app/etc/env.php" ]; then
   su www-data -s /bin/bash -c "./bin/magento cache:clean config && ./bin/magento cache:flush"
   su www-data -s /bin/bash -c "./bin/magento config:set -n web/secure/base_url https://$VIRTUAL_HOST/"
   su www-data -s /bin/bash -c "./bin/magento config:set -n web/unsecure/base_url http://$VIRTUAL_HOST/"
-fi
+#fi
 
 su www-data -s /bin/bash -c "./bin/magento maintenance:disable"
 
