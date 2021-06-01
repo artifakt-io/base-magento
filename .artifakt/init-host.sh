@@ -2,15 +2,16 @@
 
 set -e
 
-# on starter only
+# TODO on starter only
 # ignore on pro/entreprise
+MAIN_INSTANCE=$(sudo docker ps -q -f "status=running" -f "label=artifakt.io/is_main_instance=1")
 
-ID=$(sudo docker ps -ql)
+if [ "$MAIN_INSTANCE" != "" ]; then
+  #TODO STEP1 run elasticsearch
+  sudo docker cp ${MAIN_INSTANCE}:/.artifakt/docker-compose.yaml /tmp/docker-compose.yaml
 
-#TODO STEP1 run elasticsearch
-sudo docker cp ${ID}:/.artifakt/docker-compose.yaml /tmp/docker-compose.yaml
+  sudo docker-compose --file=/tmp/docker-compose.yaml --project-name=magento2 up --remove-orphans -d
 
-sudo docker-compose --file=/tmp/docker-compose.yaml --project-name=magento2 up --remove-orphans -d
-
-#TODO STEP3 install crontab
-sudo docker cp ${ID}:/etc/cron.d/magento2-cron crontab
+  #TODO STEP3 install crontab
+  sudo docker cp ${MAIN_INSTANCE}:/etc/cron.d/magento2-cron crontab
+fi;
