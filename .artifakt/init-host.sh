@@ -4,7 +4,7 @@ set -e
 
 # TODO on starter only
 # ignore on pro/entreprise
-MAIN_INSTANCE=$(sudo docker ps -q -f "status=running" -f "label=artifakt.io/is_main_instance=1")
+MAIN_INSTANCE=$(sudo docker ps -q -f "label=artifakt.io/is_main_instance=1")
 
 if [ "$MAIN_INSTANCE" != "" ]; then
   #TODO STEP1 run elasticsearch
