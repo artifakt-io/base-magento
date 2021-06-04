@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+# dirty fix to test perms
+su www-data -s /bin/bash -c "[ -L /var/www/html/var/log ] && rm -rf ./var/log/"
+su www-data -s /bin/bash -c "mkdir -p /data/pub/media"
+
 ENTRYPOINT_MYSQL_HOST=${ARTIFAKT_MYSQL_HOST:-"mysql"}
 ENTRYPOINT_REDIS_HOST=${ARTIFAKT_REDIS_HOST:-"redis"}
 
