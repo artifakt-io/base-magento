@@ -1,31 +1,30 @@
 version: '3'
 
-volumes:
-  mysql-data:
-  es-data:
-
 services:
     app:
-        build:
-            context: .
-            dockerfile: ./Dockerfile
+        build: .
         image: base-magento
+        env_file:
+            - ./.env
+        volumes:
+#            - ".:/var/www/html" # Uncomment to develop locally
+            - "data:/data"
         restart: always
         ports:
-            - "80:80"   
+            - "8000:80"   
 
     mysql:
-        image: mysql:8.0
+        image: mysql/mysql-server:8.0
         container_name: mysql
         restart: always
         volumes:
             - ./.artifakt/conf/mysqld.cnf:/etc/mysql/conf.d/mysqld.cnf:ro
             - mysql-data:/var/lib/mysql
         environment:
-            MYSQL_USER: artifakt_magento
-            MYSQL_PASSWORD: artifakt_magento
-            MYSQL_ROOT_PASSWORD: artifakt_magento
-            MYSQL_DATABASE: artifakt_magento
+            MYSQL_DATABASE: ${ARTIFAKT_MYSQL_DATABASE_NAME:-changeme}
+            MYSQL_USER: ${ARTIFAKT_MYSQL_USER:-changeme}
+            MYSQL_PASSWORD: ${ARTIFAKT_MYSQL_PASSWORD:-s3cr3t!}
+            MYSQL_RANDOM_ROOT_PASSWORD: "true"
         ports:
             - "3306:3306"
 
@@ -59,3 +58,8 @@ services:
             nofile:
                 soft: 65536
                 hard: 65536
+
+volumes:
+    mysql-data:
+    es-data:
+    data:
