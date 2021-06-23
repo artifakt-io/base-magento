@@ -69,3 +69,6 @@ atlassian*
 /generated/*
 !/generated/.htaccess
 .DS_Store
+
+certs/*.crt
+certs/*.key
