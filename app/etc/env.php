@@ -33,10 +33,10 @@ return [
         'table_prefix' => '',
         'connection' => [
             'default' => [
-                'host' => $_ENV['ARTIFAKT_MYSQL_HOST'],
-                'dbname' => $_ENV['ARTIFAKT_MYSQL_DATABASE_NAME'],
-                'username' => $_ENV['ARTIFAKT_MYSQL_USER'],
-                'password' => $_ENV['ARTIFAKT_MYSQL_PASSWORD'],
+                'host' => isset($_ENV['ARTIFAKT_MYSQL_HOST']) ? $_ENV['ARTIFAKT_MYSQL_HOST'] : '',
+                'dbname' => isset($_ENV['ARTIFAKT_MYSQL_DATABASE_NAME']) ? $_ENV['ARTIFAKT_MYSQL_DATABASE_NAME'] : '',
+                'username' => isset($_ENV['ARTIFAKT_MYSQL_USER']) ? $_ENV['ARTIFAKT_MYSQL_USER'] : '',
+                'password' => isset($_ENV['ARTIFAKT_MYSQL_PASSWORD']) ? $_ENV['ARTIFAKT_MYSQL_PASSWORD'] : '',
                 'model' => 'mysql4',
                 'engine' => 'innodb',
                 'initStatements' => 'SET NAMES utf8;',
@@ -57,8 +57,8 @@ return [
     'session' => [
         'save' => 'redis',
         'redis' => [
-            'host' => $_ENV['ARTIFAKT_REDIS_HOST'],
-            'port' => $_ENV['ARTIFAKT_REDIS_PORT'],
+            'host' => isset($_ENV['ARTIFAKT_REDIS_HOST']) ? $_ENV['ARTIFAKT_REDIS_HOST'] : '',
+            'port' => isset($_ENV['ARTIFAKT_REDIS_PORT']) ? $_ENV['ARTIFAKT_REDIS_PORT'] : '',
             'password' => '',
             'timeout' => '2.5',
             'persistent_identifier' => '',
@@ -84,24 +84,24 @@ return [
     'cache' => [
         'frontend' => [
             'default' => [
-                'id_prefix' => $_ENV['ARTIFAKT_BUILD_ID'].'_',
+                'id_prefix' => isset($_ENV['ARTIFAKT_BUILD_ID']) ? $_ENV['ARTIFAKT_BUILD_ID'].'_' : '',
                 'backend' => 'Magento\\Framework\\Cache\\Backend\\Redis',
                 'backend_options' => [
-                    'server' => $_ENV['ARTIFAKT_REDIS_HOST'],
+                    'server' => isset($_ENV['ARTIFAKT_REDIS_HOST']) ? $_ENV['ARTIFAKT_REDIS_HOST'] : '',
                     'database' => '0',
-                    'port' => $_ENV['ARTIFAKT_REDIS_PORT'],
+                    'port' => isset($_ENV['ARTIFAKT_REDIS_PORT']) ? $_ENV['ARTIFAKT_REDIS_PORT'] : '',
                     'password' => '',
                     'compress_data' => '1',
                     'compression_lib' => ''
                 ]
             ],
             'page_cache' => [
-                'id_prefix' => $_ENV['ARTIFAKT_BUILD_ID'].'_',
+                'id_prefix' => isset($_ENV['ARTIFAKT_BUILD_ID']) ? $_ENV['ARTIFAKT_BUILD_ID'].'_' : '',
                 'backend' => 'Magento\\Framework\\Cache\\Backend\\Redis',
                 'backend_options' => [
-                    'server' => $_ENV['ARTIFAKT_REDIS_HOST'],
+                    'server' => isset($_ENV['ARTIFAKT_REDIS_HOST']) ? $_ENV['ARTIFAKT_REDIS_HOST'] : '',
                     'database' => '1',
-                    'port' => $_ENV['ARTIFAKT_REDIS_PORT'],
+                    'port' => isset($_ENV['ARTIFAKT_REDIS_PORT']) ? $_ENV['ARTIFAKT_REDIS_PORT'] : '',
                     'password' => '',
                     'compress_data' => '0',
                     'compression_lib' => ''
