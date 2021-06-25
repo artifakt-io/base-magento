@@ -40,7 +40,7 @@ services:
         container_name: mysql
         restart: always
         volumes:
-            - ./.artifakt/conf/mysqld.cnf:/etc/mysql/conf.d/mysqld.cnf:ro
+            - ./.artifakt/etc/mysqld.cnf:/etc/mysql/conf.d/mysqld.cnf:ro
             - mysql-data:/var/lib/mysql
         environment:
             MYSQL_DATABASE: ${ARTIFAKT_MYSQL_DATABASE_NAME:-changeme}
@@ -56,7 +56,7 @@ services:
         restart: always
         command: redis-server /usr/local/etc/redis/redis.conf
         volumes:
-            - ./.artifakt/conf/redis.conf:/usr/local/etc/redis/redis.conf:ro
+            - ./.artifakt/etc/redis.conf:/usr/local/etc/redis/redis.conf:ro
         ports:
             - "6379:6379"
             
