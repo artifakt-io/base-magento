@@ -7,7 +7,6 @@ COPY --chown=www-data:www-data $CODE_ROOT /var/www/html/
 WORKDIR /var/www/html
 
 USER www-data
-RUN [ -f auth.json ] && cp -f auth.json /var/www/.composer/auth.json || true
 RUN [ -f composer.lock ] && composer install --no-cache --no-interaction --no-ansi --no-dev || true
 RUN php bin/magento setup:di:compile
 RUN composer dump-autoload --no-dev --optimize --apcu
