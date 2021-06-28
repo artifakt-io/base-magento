@@ -1,10 +1,6 @@
 #!/bin/bash
 set -e
 
-# Copy env.php file 
-mv /.artifakt/etc/env.php /var/www/html/app/etc/ && \
-  chown -h www-data:www-data /var/www/html/app/etc/env.php
-
 # Mount pub/media directory  
 rm -rf /var/www/html/pub/media && \
   mkdir -p /data/pub/media && \
