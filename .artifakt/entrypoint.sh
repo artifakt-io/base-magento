@@ -5,7 +5,13 @@ set -e
 tableCount=$(mysql -h $ARTIFAKT_MYSQL_HOST -u $ARTIFAKT_MYSQL_USER -p$ARTIFAKT_MYSQL_PASSWORD $ARTIFAKT_MYSQL_DATABASE_NAME -B -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$ARTIFAKT_MYSQL_DATABASE_NAME';" | grep -v "count");
 if [ "$tableCount" -gt "0" ]
 then
-  mv /var/www/html/app/etc/env.php.sample /var/www/html/app/etc/env.php
+  if [ -f "app/etc/env.php.${ARTIFAKT_ENVIRONMENT_NAME}" ]
+  then
+      mv "app/etc/env.php.${ARTIFAKT_ENVIRONMENT_NAME}" app/etc/env.php
+  else
+      mv app/etc/env.php.sample app/etc/env.php
+  fi
+  php bin/magento app:config:import --no-interaction
 fi
 
 # Mount pub/media directory
