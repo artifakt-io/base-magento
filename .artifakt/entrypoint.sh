@@ -1,7 +1,11 @@
 #!/bin/bash
 set -e
 
-# Mount pub/media directory  
+# 
+isInstalled=$(mysql -h $ARTIFAKT_MYSQL_HOST -u $ARTIFAKT_MYSQL_USER -p$ARTIFAKT_MYSQL_PASSWORD $ARTIFAKT_MYSQL_DATABASE_NAME -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$ARTIFAKT_MYSQL_DATABASE_NAME';" | grep -v "count");
+echo "Count for request: $isInstalled";
+
+# Mount pub/media directory
 rm -rf /var/www/html/pub/media && \
   mkdir -p /data/pub/media && \
   ln -sfn /data/pub/media /var/www/html/pub/media && \

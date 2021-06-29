@@ -11,7 +11,8 @@ RUN [ -f composer.lock ] && composer install --no-cache --no-interaction --no-an
 RUN php bin/magento setup:di:compile
 RUN composer dump-autoload --no-dev --optimize --apcu
 RUN php bin/magento setup:static-content:deploy -f -s compact --no-interaction --jobs 5
-RUN mv app/etc/env.php.sample app/etc/env.php
+#RUN [ ! -f app/etc/env.php ] && mv app/etc/env.php.$ARTIFAKT_ENVIRONMENT_NAME app/etc/env.php 2>/dev/null || true
+RUN [ ! -f app/etc/env.php ] && mv app/etc/env.php.sample app/etc/env.php || true
 USER root
 
 # copy the artifakt folder on root
