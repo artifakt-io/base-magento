@@ -10,7 +10,7 @@ USER www-data
 RUN [ -f composer.lock ] && composer install --no-cache --no-interaction --no-ansi --no-dev || true
 RUN php bin/magento setup:di:compile
 RUN composer dump-autoload --no-dev --optimize --apcu
-RUN php bin/magento setup:static-content:deploy -f -s compact --no-interaction --jobs 5
+RUN php bin/magento setup:static-content:deploy -f --no-interaction --jobs 5
 USER root
 
 # copy the artifakt folder on root
