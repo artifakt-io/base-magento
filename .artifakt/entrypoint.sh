@@ -1,52 +1,61 @@
 #!/bin/bash
 set -e
 
-# dirty fix to test perms
-su www-data -s /bin/bash -c "[ -L /var/www/html/var/log ] && rm -rf ./var/log/"
-su www-data -s /bin/bash -c "mkdir -p /data/pub/media"
+# Manage env.php
+tableCount=$(mysql -h $ARTIFAKT_MYSQL_HOST -u $ARTIFAKT_MYSQL_USER -p$ARTIFAKT_MYSQL_PASSWORD $ARTIFAKT_MYSQL_DATABASE_NAME -B -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$ARTIFAKT_MYSQL_DATABASE_NAME';" | grep -v "count");
+if [ "$tableCount" -gt "0" ]
+then
+  if [ -f "app/etc/env.php.${ARTIFAKT_ENVIRONMENT_NAME}" ]
+  then
+      mv "app/etc/env.php.${ARTIFAKT_ENVIRONMENT_NAME}" app/etc/env.php
+  else
+      mv app/etc/env.php.sample app/etc/env.php
+  fi
+  php bin/magento app:config:import --no-interaction
+fi
 
-ENTRYPOINT_MYSQL_HOST=${ARTIFAKT_MYSQL_HOST:-"mysql"}
-ENTRYPOINT_REDIS_HOST=${ARTIFAKT_REDIS_HOST:-"redis"}
+# Mount pub/media directory
+rm -rf /var/www/html/pub/media && \
+  mkdir -p /data/pub/media && \
+  ln -sfn /data/pub/media /var/www/html/pub/media && \
+  chown -h www-data:www-data /var/www/html/pub/media /data/pub/media
 
-echo ">>>>>>>>>>>>>> START CUSTOM ENTRYPOINT SCRIPT <<<<<<<<<<<<<<<<< "
+# Mount pub/static/_cache directory
+rm -rf /var/www/html/pub/static/_cache && \
+  mkdir -p /data/pub/static/_cache && \
+  ln -sfn /data/pub/static/_cache /var/www/html/pub/static/_cache && \
+  chown -h www-data:www-data /var/www/html/pub/static/_cache /data/pub/static/_cache
+  
+# Mount var directory
+mkdir -p /data/var && \
+  mv -f /var/www/html/var/.htaccess /data/var/ && \
+  rm -rf /var/www/html/var && \
+  ln -sfn /data/var /var/www/html/var && \
+  chown -h www-data:www-data /var/www/html/var /data/var
 
-# wait for database to be ready
-/.artifakt/wait-for-it.sh $ENTRYPOINT_MYSQL_HOST:3306
+# Update Magento  
+if [ "$ARTIFAKT_IS_MAIN_INSTANCE" == "1" ]
+then
+  if [ "$(bin/magento setup:db:status)" != "All modules are up to date." ]
+  then
+      #1 - Put 'current/live' release under maintenance
+      php bin/magento maintenance:enable
 
-# https://devdocs.magento.com/guides/v2.4/config-guide/redis/redis-session.html
-#if [ ! -f "/var/www/html/app/etc/env.php" ]; then 
-  echo "File not found, running generation." 
-  su www-data -s /bin/bash -c "./bin/magento setup:install --backend-frontname=admin123 \
-  --db-host=$ENTRYPOINT_MYSQL_HOST --db-name=$ARTIFAKT_MYSQL_DATABASE_NAME --db-user=$ARTIFAKT_MYSQL_USER --db-password=$ARTIFAKT_MYSQL_PASSWORD \
-  --admin-firstname=Magento --admin-lastname=User --admin-email=user@example.com \
-  --admin-user=admin --admin-password=admin123 --language=fr_FR \
-  --session-save=redis --session-save-redis-host=$ENTRYPOINT_REDIS_HOST \
-  --cache-backend=redis --cache-backend-redis-server=$ENTRYPOINT_REDIS_HOST --cache-backend-redis-db=0 \
-  --page-cache=redis --page-cache-redis-server=$ENTRYPOINT_REDIS_HOST --page-cache-redis-db=1 \
-  --currency=EUR --timezone=Europe/Paris --use-rewrites=1 \
-  --search-engine=elasticsearch7 --elasticsearch-host=elasticsearch \
-  --elasticsearch-port=9200"  
-#fi
+      #2 - Upgrade Database
+      php bin/magento setup:db-schema:upgrade --no-interaction
+      php bin/magento setup:db-data:upgrade --no-interaction
+      php bin/magento app:config:import --no-interaction
 
-su www-data -s /bin/bash -c "./bin/magento maintenance:enable"
-su www-data -s /bin/bash -c "./bin/magento deploy:mode:set production"
-su www-data -s /bin/bash -c "./bin/magento setup:upgrade && ./bin/magento setup:di:compile && ./bin/magento setup:static-content:deploy -f fr_FR en_US --no-interaction --jobs 5"
-
-#if [ ! -f "/var/www/html/app/etc/env.php" ]; then 
-  su www-data -s /bin/bash -c "./bin/magento config:set -n web/secure/use_in_adminhtml 1"
-  su www-data -s /bin/bash -c "./bin/magento config:set -n web/secure/enable_upgrade_insecure 1"
-  #You need to configure Two-Factor Authorization in order to proceed to your store's admin area
-  #su www-data -s /bin/bash -c "./bin/magento module:disable Magento_TwoFactorAuth"
-  #su www-data -s /bin/bash -c "./bin/magento security:recaptcha:disable-for-user-login"
-  su www-data -s /bin/bash -c "./bin/magento setup:config:set --backend-frontname=admin123"
-  su www-data -s /bin/bash -c "./bin/magento cache:clean config && ./bin/magento cache:flush"
-  su www-data -s /bin/bash -c "./bin/magento config:set -n web/secure/base_url https://$VIRTUAL_HOST/"
-  su www-data -s /bin/bash -c "./bin/magento config:set -n web/unsecure/base_url http://$VIRTUAL_HOST/"
-#fi
-
-su www-data -s /bin/bash -c "./bin/magento maintenance:disable"
-
-su www-data -s /bin/bash -c "./bin/magento config:show"
-su www-data -s /bin/bash -c "cat ./app/etc/env.php"
-
-echo ">>>>>>>>>>>>>> END CUSTOM ENTRYPOINT SCRIPT <<<<<<<<<<<<<<<<< "
+      #3 - Disable Maintenance
+      php bin/magento maintenance:disable
+      echo "Database is now up to date."
+  else
+    echo "Database is already up to date."
+  fi
+else
+  # Wait until database is up to date
+  until [ "$(bin/magento setup:db:status)" == "All modules are up to date." ]
+  do sleep 10 && echo "Database is not up to date, waiting ..."
+  done
+  echo "Database is up to date."
+fi

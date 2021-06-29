@@ -1,0 +1,4 @@
+# as any script, use this file to export any env. vars
+# needed in local docker image build
+# when you use the Artifakt PaaS console, 
+# they are automatically generated for you 
