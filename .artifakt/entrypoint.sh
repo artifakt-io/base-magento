@@ -2,11 +2,15 @@
 set -e
 
 # Manage Env.php
-isInstalled=$(mysql -h $ARTIFAKT_MYSQL_HOST -u $ARTIFAKT_MYSQL_USER -p$ARTIFAKT_MYSQL_PASSWORD $ARTIFAKT_MYSQL_DATABASE_NAME -B -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$ARTIFAKT_MYSQL_DATABASE_NAME';" | grep -v "count");
-echo "Count for request: $isInstalled";
-#RUN [ ! -f app/etc/env.php ] && mv app/etc/env.php.$ARTIFAKT_ENVIRONMENT_NAME app/etc/env.php 2>/dev/null || true
-#RUN [ ! -f app/etc/env.php ] && mv app/etc/env.php.sample app/etc/env.php || true
-
+tableCount=$(mysql -h $ARTIFAKT_MYSQL_HOST -u $ARTIFAKT_MYSQL_USER -p$ARTIFAKT_MYSQL_PASSWORD $ARTIFAKT_MYSQL_DATABASE_NAME -B -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$ARTIFAKT_MYSQL_DATABASE_NAME';" | grep -v "count");
+if [ "$tableCount" -gt "0" ]
+then
+  echo "Already Installed"
+  mv app/etc/env.php.sample app/etc/env.php
+  #RUN [ ! -f app/etc/env.php ] && mv app/etc/env.php.$ARTIFAKT_ENVIRONMENT_NAME app/etc/env.php 2>/dev/null || true
+else
+  echo "To install"
+fi
 
 # Mount pub/media directory
 rm -rf /var/www/html/pub/media && \
@@ -29,7 +33,9 @@ mkdir -p /data/var && \
 
 # Update Magento  
 if [ "$ARTIFAKT_IS_MAIN_INSTANCE" == "1" ]
+then
   if [ "$(bin/magento setup:db:status)" != "All modules are up to date." ]
+  then
       #1 - Put 'current/live' release under maintenance
       php bin/magento maintenance:enable
 
