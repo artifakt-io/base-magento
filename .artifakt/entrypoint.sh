@@ -32,9 +32,10 @@ then
       mv app/etc/env.php.sample app/etc/env.php
   fi
 
+  # Update config if changes
   php bin/magento app:config:import --no-interaction
 
-  # Update Magento  
+  # Update database if changes
   if [ "$ARTIFAKT_IS_MAIN_INSTANCE" == "1" ]
   then
     if [ "$(bin/magento setup:db:status)" != "All modules are up to date." ]
@@ -61,6 +62,3 @@ then
     echo "Database is up to date."
   fi 
 fi
-
-
-
