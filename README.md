@@ -1,90 +1,152 @@
-<p align="center">
-    <a href="https://magento.com">
-        <img src="https://static.magento.com/sites/all/themes/magento/logo.svg" width="300px" alt="Magento Commerce" />
-    </a>
-    <br />
-    <br />
-    <a href="https://www.codetriage.com/magento/magento2">
-        <img src="https://www.codetriage.com/magento/magento2/badges/users.svg" alt="Open Source Helpers" />
-    </a>
-    <a href="https://gitter.im/magento/magento2?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge">
-        <img src="https://badges.gitter.im/Join%20Chat.svg" alt="Gitter" />
-    </a>
-    <a href="https://crowdin.com/project/magento-2">
-        <img src="https://d322cqt584bo4o.cloudfront.net/magento-2/localized.svg" alt="Crowdin" />
-    </a>
-</p>
+<div align="center">
 
-# Welcome
 
-Welcome to Magento 2 installation! We're glad you chose to install Magento 2, a cutting-edge, feature-rich eCommerce solution that gets results.
+<h1>Artifakt Sample Magento App</h1>
+<img src="./.github/logo.png" alt="artifakt-logo" width="100"/>
 
-## Magento System Requirements
+**Sample Demo App by Artifakt PaaS**
 
-[Magento System Requirements](https://devdocs.magento.com/guides/v2.4/install-gde/system-requirements.html).
 
-## Install Magento
+[![Build Docker Images](https://github.com/artifakt-io/artifakt-docker-images/actions/workflows/nightly.yml/badge.svg)][Build status]
+[![Twitter handle][]][Twitter badge]
 
-* [Installation Guide](https://devdocs.magento.com/guides/v2.4/install-gde/bk-install-guide.html).
+</div>
 
-## Learn More About GraphQL in Magento 2
+## Getting started
 
-* [GraphQL Developer Guide](https://devdocs.magento.com/guides/v2.4/graphql/index.html)
+Artifakt PaaS provides specialized [base docker images](https://github.com/artifakt-io/artifakt-docker-images) to build your application images. 
 
-## Contributing to the Magento 2 Code Base
+These base images are not usable alone, as they include no code or app. 
 
-Contributions can take the form of new components or features, changes to existing features, tests, documentation (such as developer guides, user guides, examples, or specifications), bug fixes, optimizations, or just good suggestions.
+That's why Artifakt provides sample apps like this one to showcase how to build, test and deploy using our special features.
 
-To learn about how to contribute, click [here][1].
+## Magento
 
-To learn about issues, click [here][2]. To open an issue, click [here][3].
+For complete documentation about the Magento project, please refer to official [README](./README-upstream.md) file
 
-To suggest documentation improvements, click [here][4].
+## Pre-requisites
 
-[1]: https://devdocs.magento.com/guides/v2.4/contributor-guide/contributing.html
-[2]: https://devdocs.magento.com/guides/v2.4/contributor-guide/contributing.html#report
-[3]: https://github.com/magento/magento2/issues
-[4]: https://devdocs.magento.com
+To enjoy the best experience, a recent version of Docker (>=20.10) is required.
+Older versions like 19.03 can work by enabling experimental features.
 
-### Community Maintainers
+Docker-compose is also required. See [official instructions](https://docs.docker.com/compose/install/) for your own OS.
 
-The members of this team have been recognized for their outstanding commitment to maintaining and improving Magento. Magento has granted them permission to accept, merge, and reject pull requests, as well as review issues, and thanks to these Community Maintainers for their valuable contributions.
+## Installation / Configuration
 
-[![](https://raw.githubusercontent.com/wiki/magento/magento2/images/maintainers.png)](https://magento.com/magento-contributors#maintainers)
+Container configuration tries to stick to 12-factor app principles as much as possible. Thus, you can edit a custom `.env` file containing Artifakt default env. variables.
 
-### Top Contributors
+## Pre configurated Docker compose stack
 
-Magento is thankful for any contribution that can improve our codebase, documentation or increase test coverage. We always recognize our most active members, as their contributions are the foundation of the Magento Open Source platform.
+You can use this stack to run a complete Magento stack with MySQL in a few docker-compose lines.
 
-[![](https://raw.githubusercontent.com/wiki/magento/magento2/images/contributors.png)](https://magento.com/magento-contributors)
+```
+docker-compose --env-file=.env.dist up -d --build
+```
 
-### Labels Applied by the Magento Team
+### Additional installation steps
 
-We apply labels to public Pull Requests and Issues to help other participants retrieve additional information about current progress, component assignments, Magento release lines, and much more.
-Please review the [Code Contributions guide](https://devdocs.magento.com/guides/v2.4/contributor-guide/contributing.html#labels) for detailed information on labels used in Magento 2 repositories.
+You will need to enter the container to run the installation in command line, because Magento 2.4 has dropped the setup wizard.
 
-## Reporting Security Issues
+First, open a shell inside the application container:
 
-To report security vulnerabilities or learn more about reporting security issues in Magento software or web sites visit the [Magento Bug Bounty Program](https://hackerone.com/magento) on hackerone. Please create a hackerone account [there](https://hackerone.com/magento) to submit and follow-up on your issue.
+`docker-compose exec app bash`
 
-Stay up-to-date on the latest security news and patches for Magento by signing up for [Security Alert Notifications](https://magento.com/security/sign-up).
+And then paste this command (please refer to official docs for an explanation on these parameters)
 
-## License
+```
+php bin/magento setup:install \
+  --admin-email="email@example.com" \
+  --admin-firstname="John" \
+  --admin-lastname="Doe" \
+  --admin-password="password123" \
+  --admin-use-security-key="1" \
+  --admin-user="admin" \
+  --backend-frontname="admin" \
+  --base-url="http://localhost/" \
+  --cache-backend-redis-db="0" \
+  --cache-backend-redis-password='' \
+  --cache-backend-redis-port="${ARTIFAKT_REDIS_PORT}" \
+  --cache-backend-redis-server="${ARTIFAKT_REDIS_HOST}" \
+  --cache-backend='redis' \
+  --cleanup-database \
+  --consumers-wait-for-messages=0 \
+  --currency="USD" \
+  --db-host="${ARTIFAKT_MYSQL_HOST}" \
+  --db-name="${ARTIFAKT_MYSQL_DATABASE_NAME}" \
+  --db-password="${ARTIFAKT_MYSQL_PASSWORD}" \
+  --db-user="${ARTIFAKT_MYSQL_USER}" \
+  --document-root-is-pub="1" \
+  --elasticsearch-enable-auth='0' \
+  --elasticsearch-host="${ARTIFAKT_ES_HOST}" \
+  --elasticsearch-index-prefix="magento2" \
+  --elasticsearch-port="${ARTIFAKT_ES_PORT}" \
+  --elasticsearch-timeout="15" \
+  --language="en_US" \
+  --page-cache-redis-db="1" \
+  --page-cache-redis-password='' \
+  --page-cache-redis-port="${ARTIFAKT_REDIS_PORT}" \
+  --page-cache-redis-server="${ARTIFAKT_REDIS_HOST}" \
+  --page-cache='redis' \
+  --search-engine=elasticsearch7 \
+  --session-save-redis-db="2" \
+  --session-save-redis-disable-locking="1" \
+  --session-save-redis-host="${ARTIFAKT_REDIS_HOST}" \
+  --session-save-redis-max-concurrency="60" \
+  --session-save-redis-password='' \
+  --session-save-redis-port="${ARTIFAKT_REDIS_PORT}" \
+  --session-save='redis' \
+  --timezone="Europe/Paris" \
+  --use-rewrites="1" \
+  --use-secure-admin="0" \
+  --use-secure="0"
+  ```
 
-Each Magento source file included in this distribution is licensed under OSL 3.0 or the Magento Enterprise Edition (MEE) license.
 
-[Open Software License (OSL 3.0)](https://opensource.org/licenses/osl-3.0.php).
-Please see [LICENSE.txt](https://github.com/magento/magento2/blob/2.4-develop/LICENSE.txt) for the full text of the OSL 3.0 license or contact license@magentocommerce.com for a copy.
+## Adding custom code
 
-Subject to Licensee's payment of fees and compliance with the terms and conditions of the MEE License, the MEE License supersedes the OSL 3.0 license for each source file.
-Please see LICENSE_EE.txt for the full text of the MEE License or visit <https://magento.com/legal/terms/enterprise>.
+Our standard Dockerfile defines a default workdir in /var/www/html to put your code into. By default, it is copied inside the custom docker image when you build it. The following command will build a close to production docker image on your local laptop:
 
-## Community Engineering Slack
+```
+DOCKER_BUILDKIT=1 docker build -t `basename $PWD`:latest --progress=plain .
+```
 
-To connect with Magento and the Community, join us on the [Magento Community Engineering Slack](https://magentocommeng.slack.com). If you are interested in joining Slack, or a specific channel, send us a request at [engcom@adobe.com](mailto:engcom@adobe.com) or [self signup](https://opensource.magento.com/slack).
+We also have a development mode, with the included docker-compose file that will mount code inside the container directly, without the need to rebuild on each file update. This is a good practice and enables a fast iteration cycle.
 
-We have channels for each project. These channels are recommended for new members:
+## Persistent data
 
-* [general](https://magentocommeng.slack.com/messages/C4YS78WE6): Open chat for introductions and Magento 2 questions
-* [github](https://magentocommeng.slack.com/messages/C7KB93M32): Support for GitHub issues, pull requests, and processes
-* [public-backlog](https://magentocommeng.slack.com/messages/CCV3J3RV5): Discussions of the Magento 2 backlog
+To persist data between container updates, we inittialize a /data/ folder inside the docker image. You can use it for images, assets, uploads, cache, etc.
+
+## Building Workflow
+
+What happens when you build the image with our standard Dockerfile?
+
+1. base image is pulled from Artifakt free registry
+2. local Dockerfile is built
+3. if custom build args exists that are sourced from local repo
+4. if a build.sh script is available, it is executed
+5. overall, during build step we add code source and install packages and internal dependencies
+6. if the special folder ‘.artifakt’ is found it is copied at the container root file system for later use.
+
+End of build step!
+
+## Starting workflow
+
+Here is what happens when the container runs on your workstation. We apply the same workflow in production for predictible results.
+
+1. environment variables for all dependencies are gathered: mysql, redis, elasticache, etc.
+2. container is created with standard volumes on /data and /var/log/artifakt.
+3. container is configured with standard env. variables
+4. container is started and runs the base image entrypoint
+5. base image entrypoint will look for a custom entrypoint script in /.artifakt folder and run it for you.
+
+
+# Support and feedback
+
+* [File an issue](https://github.com/artifakt-io/artifakt-docker-images/issues/new/choose)
+* [Contact Artifakt Support](https://support.artifakt.io/)
+
+[Build Status - Main]: https://github.com/artifakt-io/artifakt-docker-images/actions/workflows/nightly.yml/badge.svg?branch=main&event=push
+[Build status]: https://github.com/artifakt-io/artifakt-docker-images/actions
+[Twitter badge]: https://twitter.com/intent/follow?screen_name=artifakt_com
+[Twitter handle]: https://img.shields.io/twitter/follow/artifakt_com.svg?style=social&label=Follow
+
