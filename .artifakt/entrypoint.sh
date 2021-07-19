@@ -13,33 +13,44 @@ then
       mv app/etc/env.php.sample app/etc/env.php
   fi
 
-  # Update config if changes
-  php bin/magento app:config:import --no-interaction
-
-  # Update database if changes
+  # Update database and/or configuration if changes
   if [ "$ARTIFAKT_IS_MAIN_INSTANCE" == "1" ]
   then
+    #1 - Put 'current/live' release under maintenance if needed
+    if [[ "$(bin/magento setup:db:status)" != "All modules are up to date." || "$(bin/magento app:config:status)" != "Config files are up to date." ]]
+    then
+        php bin/magento maintenance:enable
+    fi
+
+    #2 - Upgrade database if needed
     if [ "$(bin/magento setup:db:status)" != "All modules are up to date." ]
     then
-        #1 - Put 'current/live' release under maintenance
-        php bin/magento maintenance:enable
-
-        #2 - Upgrade database
         php bin/magento setup:db-schema:upgrade --no-interaction
         php bin/magento setup:db-data:upgrade --no-interaction
-        php bin/magento app:config:import --no-interaction
-
-        #3 - Disable maintenance
-        php bin/magento maintenance:disable
-        echo "Database is now up to date."
     else
       echo "Database is already up to date."
     fi
+
+    #3 - Upgrade configuration if needed
+    if [ "$(bin/magento app:config:status)" != "Config files are up to date." ]
+    then
+        php bin/magento app:config:import --no-interaction
+    else
+      echo "Configuration is already up to date."
+    fi
+
+    #4 - Disable maintenance if needed
+    maintenanceStatusMsg=$(bin/magento maintenance:status)
+    maintenanceOnSubstring="Status: maintenance mode is active"
+    if [ "${maintenanceStatusMsg/$maintenanceOnSubstring}" != "$maintenanceStatusMsg" ]
+    then
+        php bin/magento maintenance:disable
+    fi
   else
-    # Wait until database is up to date
-    until [ "$(bin/magento setup:db:status)" == "All modules are up to date." ]
-    do sleep 10 && echo "Database is not up to date, waiting ..."
+    # Wait until database and configuration are up to date
+    until [[ "$(bin/magento setup:db:status)" == "All modules are up to date." && "$(bin/magento app:config:status)" == "Config files are up to date." ]]
+    do sleep 10 && echo "Database and/or configuration is/are not up to date, waiting ..."
     done
-    echo "Database is up to date."
+    echo "Database and configuration are up to date."
   fi
 fi
