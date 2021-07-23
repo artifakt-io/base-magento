@@ -1,26 +1,7 @@
 #!/bin/bash
 set -e
 
-# Mount pub/media directory
-rm -rf /var/www/html/pub/media && \
-  mkdir -p /data/pub/media && \
-  ln -sfn /data/pub/media /var/www/html/pub/media && \
-  chown -h www-data:www-data /var/www/html/pub/media /data/pub/media
-
-# Mount pub/static/_cache directory
-rm -rf /var/www/html/pub/static/_cache && \
-  mkdir -p /data/pub/static/_cache && \
-  ln -sfn /data/pub/static/_cache /var/www/html/pub/static/_cache && \
-  chown -h www-data:www-data /var/www/html/pub/static/_cache /data/pub/static/_cache
-  
-# Mount var directory
-mkdir -p /data/var && \
-  mv -f /var/www/html/var/.htaccess /data/var/ && \
-  rm -rf /var/www/html/var && \
-  ln -sfn /data/var /var/www/html/var && \
-  chown -h www-data:www-data /var/www/html/var /data/var
-
-# Check if mangento is installed
+# Check if Magento is installed
 tableCount=$(mysql -h $ARTIFAKT_MYSQL_HOST -u $ARTIFAKT_MYSQL_USER -p$ARTIFAKT_MYSQL_PASSWORD $ARTIFAKT_MYSQL_DATABASE_NAME -B -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$ARTIFAKT_MYSQL_DATABASE_NAME';" | grep -v "count");
 if [ "$tableCount" -gt "0" ]
 then
@@ -32,33 +13,44 @@ then
       mv app/etc/env.php.sample app/etc/env.php
   fi
 
-  # Update config if changes
-  php bin/magento app:config:import --no-interaction
-
-  # Update database if changes
+  # Update database and/or configuration if changes
   if [ "$ARTIFAKT_IS_MAIN_INSTANCE" == "1" ]
   then
+    #1 - Put 'current/live' release under maintenance if needed
+    if [[ "$(bin/magento setup:db:status)" != "All modules are up to date." || "$(bin/magento app:config:status)" != "Config files are up to date." ]]
+    then
+        php bin/magento maintenance:enable
+    fi
+
+    #2 - Upgrade database if needed
     if [ "$(bin/magento setup:db:status)" != "All modules are up to date." ]
     then
-        #1 - Put 'current/live' release under maintenance
-        php bin/magento maintenance:enable
-
-        #2 - Upgrade Database
         php bin/magento setup:db-schema:upgrade --no-interaction
         php bin/magento setup:db-data:upgrade --no-interaction
-        php bin/magento app:config:import --no-interaction
-
-        #3 - Disable Maintenance
-        php bin/magento maintenance:disable
-        echo "Database is now up to date."
     else
       echo "Database is already up to date."
     fi
+
+    #3 - Upgrade configuration if needed
+    if [ "$(bin/magento app:config:status)" != "Config files are up to date." ]
+    then
+        php bin/magento app:config:import --no-interaction
+    else
+      echo "Configuration is already up to date."
+    fi
+
+    #4 - Disable maintenance if needed
+    maintenanceStatusMsg=$(bin/magento maintenance:status)
+    maintenanceOnSubstring="Status: maintenance mode is active"
+    if [ "${maintenanceStatusMsg/$maintenanceOnSubstring}" != "$maintenanceStatusMsg" ]
+    then
+        php bin/magento maintenance:disable
+    fi
   else
-    # Wait until database is up to date
-    until [ "$(bin/magento setup:db:status)" == "All modules are up to date." ]
-    do sleep 10 && echo "Database is not up to date, waiting ..."
+    # Wait until database and configuration are up to date
+    until [[ "$(bin/magento setup:db:status)" == "All modules are up to date." && "$(bin/magento app:config:status)" == "Config files are up to date." ]]
+    do sleep 10 && echo "Database and/or configuration is/are not up to date, waiting ..."
     done
-    echo "Database is up to date."
-  fi 
+    echo "Database and configuration are up to date."
+  fi
 fi
