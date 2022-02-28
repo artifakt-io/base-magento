@@ -1,4 +1,4 @@
-FROM registry.artifakt.io/magento:2.4-apache
+FROM registry.artifakt.io/magento:2.4
 
 ARG CODE_ROOT=.
 
