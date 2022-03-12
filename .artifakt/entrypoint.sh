@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-persistent_folder=setup && \
+persistent_folder=pub && \
   mkdir -p /data/$persistent_folder
   cp -ur /var/www/html/$persistent_folder/* /data/$persistent_folder && \
   chown -R www-data:www-data /data/$persistent_folder 
