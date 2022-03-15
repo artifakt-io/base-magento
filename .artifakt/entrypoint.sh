@@ -1,10 +1,17 @@
 #!/bin/bash
 set -e
 
+echo DEBUG before ...
+ls -la /data/pub
+
 persistent_folder=pub && \
   mkdir -p /data/$persistent_folder
-  cp -ur /var/www/html/$persistent_folder/* /data/$persistent_folder && \
-  chown -R www-data:www-data /data/$persistent_folder 
+  cp -ur /var/www/html/$persistent_folder/* /data/$persistent_folder
+  
+chown -R www-data:www-data /data/$persistent_folder 
+
+echo DEBUG after ...
+ls -la /data/pub
 
 # Check if Magento is installed
 tableCount=$(mysql -h $ARTIFAKT_MYSQL_HOST -u $ARTIFAKT_MYSQL_USER -p$ARTIFAKT_MYSQL_PASSWORD $ARTIFAKT_MYSQL_DATABASE_NAME -B -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$ARTIFAKT_MYSQL_DATABASE_NAME';" | grep -v "count");
