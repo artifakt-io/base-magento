@@ -21,8 +21,16 @@ then
   then
       mv "app/etc/env.php.${ARTIFAKT_ENVIRONMENT_NAME}" app/etc/env.php
   else
-      mv app/etc/env.php.sample app/etc/env.php
+      if [ -f "app/etc/env.php.sample" ]
+      then
+        mv app/etc/env.php.sample app/etc/env.php
+      else
+        echo INFO cannot find app/etc/env.php.sample, skipping 
+      fi
   fi
+
+  echo NOTICE content of "etc" folder:
+  ls -la app/etc/
 
   # Update database and/or configuration if changes
   if [ $ARTIFAKT_IS_MAIN_INSTANCE == 1 ]
