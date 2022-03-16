@@ -40,6 +40,8 @@ then
     bin/magento app:config:status
     configStatus=$?
 
+    echo DEBUG dbStatus=$dbStatus configStatus=$configStatus
+
     #1 - Put 'current/live' release under maintenance if needed
     if [[ $dbStatus == 2 || $configStatus == 2 ]]
     then
@@ -54,9 +56,17 @@ then
     fi
 
     #3 - Upgrade configuration if needed
-    if [ $configStatus == 2 ]
+    #if [ $configStatus == 2 ]
+    #then
+    #    php bin/magento app:config:import --no-interaction
+    #fi
+
+    if [ "$(bin/magento app:config:status)" != "Config files are up to date." ]
     then
         php bin/magento app:config:import --no-interaction
+        echo "Configuration is now up to date.";
+    else
+        echo "Configuration is already up to date.";
     fi
 
     #4 - Disable maintenance if needed
