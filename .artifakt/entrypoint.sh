@@ -35,10 +35,13 @@ then
   # Update database and/or configuration if changes
   if [ $ARTIFAKT_IS_MAIN_INSTANCE == 1 ]
   then
+    # temporary disable error
+    set +e
     bin/magento setup:db:status
     dbStatus=$?
     bin/magento app:config:status
     configStatus=$?
+    set -e
 
     echo DEBUG dbStatus=$dbStatus configStatus=$configStatus
 
