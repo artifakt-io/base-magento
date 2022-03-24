@@ -2,9 +2,9 @@
 set -e
 
 echo "syncing custom configuration for varnish/nginx"
-cp -r /.artifakt/etc/varnish/* /conf/varnish
+cp -r /.artifakt/etc/varnish/* /conf/varnish || true
 ls -la /conf/varnish
-cp -r /.artifakt/etc/nginx/* /conf/nginxfpm
+cp -r /.artifakt/etc/nginx/* /conf/nginxfpm || true
 ls -la /conf/nginxfpm
 
 echo DEBUG before ...
