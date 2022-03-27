@@ -11,9 +11,10 @@ echo DEBUG before ...
 ls -la /data/pub
 
 persistent_folder=pub
-mkdir -p /data/$persistent_folder
+mkdir -p /data/$persistent_folder /data/setup
 cp -ur /var/www/html/$persistent_folder/* /data/$persistent_folder || true  
-chown -R www-data:www-data /data/$persistent_folder 
+cp -ur /var/www/html/setup/* /data/setup || true  
+chown -R www-data:www-data /data/$persistent_folder /data/setup 
 
 echo DEBUG after ...
 ls -la /data/pub
