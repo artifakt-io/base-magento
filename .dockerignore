@@ -1,6 +1,7 @@
 .git
 Dockerfile
 docker-compose.yaml
+.dockerignore
 
 /.buildpath
 /.cache
