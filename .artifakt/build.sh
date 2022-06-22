@@ -2,6 +2,8 @@
 
 [ "$DEBUG" = "true" ] && set -x
 
+chsh -s /bin/bash www-data
+
 ROOT=/var/log/artifakt
 
 echo Init persistent folder $ROOT
