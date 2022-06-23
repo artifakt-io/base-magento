@@ -113,8 +113,8 @@ then
     echo "#4 - Sync pub folder with Nginx FPM container"
     persistent_folder=pub
     mkdir -p /data/$persistent_folder /data/setup
-    cp -pur /var/www/html/$persistent_folder/* /data/$persistent_folder || true  
-    cp -pur /var/www/html/setup/* /data/setup || true  
+    cp -pur -L /var/www/html/$persistent_folder/* /data/$persistent_folder || true  
+    cp -pur -L /var/www/html/setup/* /data/setup || true  
     
     #6 - remove generated content and rebuild page generation
     echo "#6 - Remove generated content and rebuild page generation"
@@ -166,12 +166,12 @@ then
   fi  
 
   #6 fix owner/permissions on var/{cache,di,generation,page_cache,view_preprocessed}
+  echo "#6 -  fix owner/permissions on var/{cache,di,generation,page_cache,view_preprocessed}"
   find var generated vendor pub/static pub/media app/etc -type f -exec chown www-data:www-data {} +
   find var generated vendor pub/static pub/media app/etc -type d -exec chown www-data:www-data {} +
 
   find var generated vendor pub/static pub/media app/etc -type f -exec chmod g+w {} +
   find var generated vendor pub/static pub/media app/etc -type d -exec chmod g+ws {} +
-
   
   #7 - Deploy static content with languages and themes
   echo "#7 - Deploy static content with languages and themes"
@@ -189,3 +189,8 @@ then
   su www-data -s /bin/bash -c 'php bin/magento cache:flush'
   
 fi # end of "Check if Magento is installed"
+
+echo "#END - fix owner on dynamic data"
+chown -R www-data:www-data /var/www/html/pub/static/*
+chown -R www-data:www-data /var/www/html/pub/media/*
+chown -R www-data:www-data /var/www/html/var/log/*
