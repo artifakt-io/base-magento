@@ -164,6 +164,14 @@ then
     su www-data -s /bin/bash -c 'until php bin/magento setup:di:compile; do echo "ERROR: di:compile failed"; composer dump-autoload --no-dev --optimize --apcu --no-interaction; sleep 1; done;'
     set -e
   fi  
+
+  #6 fix owner/permissions on var/{cache,di,generation,page_cache,view_preprocessed}
+  find var generated vendor pub/static pub/media app/etc -type f -exec chown www-data:www-data {} +
+  find var generated vendor pub/static pub/media app/etc -type d -exec chown www-data:www-data {} +
+
+  find var generated vendor pub/static pub/media app/etc -type f -exec chmod g+w {} +
+  find var generated vendor pub/static pub/media app/etc -type d -exec chmod g+ws {} +
+
   
   #7 - Deploy static content with languages and themes
   echo "#7 - Deploy static content with languages and themes"
