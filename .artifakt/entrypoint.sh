@@ -23,8 +23,9 @@ set -e
 # ARTIFAKT_MYSQL_*
 # ARTIFAKT_ENVIRONMENT_NAME
 
-PERSISTENT_FOLDER_LIST=('pub/media' 'pub/static' 'var')
+echo "#4 - Sync shared folders with Nginx FPM container"
 
+PERSISTENT_FOLDER_LIST=('app' 'code' 'lib' 'pub/media' 'pub/static' 'var')
 for persistent_folder in ${PERSISTENT_FOLDER_LIST[@]}; do
 
   echo "DEBUG: Init persistent folder /data/$persistent_folder"
@@ -32,7 +33,7 @@ for persistent_folder in ${PERSISTENT_FOLDER_LIST[@]}; do
 
   echo Copy modified/new files from container /var/www/html/$persistent_folder to volume /data/$persistent_folder
   echo "DEBUG: Copy modified/new files from container /var/www/html/$persistent_folder to volume /data/$persistent_folder"
-  cp -ur /var/www/html/$persistent_folder/* /data/$persistent_folder || true
+  cp -pur -L /var/www/html/$persistent_folder/* /data/$persistent_folder || true
 
   echo "DEBUG: Link /data/$persistent_folder directory to /var/www/html/$persistent_folder"
   rm -rf /var/www/html/$persistent_folder && \
@@ -111,10 +112,13 @@ then
     #    This is the longest part because of many files to check
     #    And because files are stored in EFS, not EBS
     echo "#4 - Sync pub folder with Nginx FPM container"
-    persistent_folder=pub
-    mkdir -p /data/$persistent_folder /data/setup
-    cp -pur -L /var/www/html/$persistent_folder/* /data/$persistent_folder || true  
-    cp -pur -L /var/www/html/setup/* /data/setup || true  
+    #persistent_folder=pub
+    #mkdir -p /data/$persistent_folder /data/setup
+    #cp -pur -L /var/www/html/$persistent_folder/* /data/$persistent_folder || true  
+    #cp -pur -L /var/www/html/setup/* /data/setup || true  
+    #cp -pur -L /var/www/html/lib/* /data/lib || true
+    #cp -pur -L /var/www/html/code/* /data/code || true
+    #cp -pur -L /var/www/html/app/* /data/app || true
     
     #6 - remove generated content and rebuild page generation
     echo "#6 - Remove generated content and rebuild page generation"
@@ -191,6 +195,7 @@ then
 fi # end of "Check if Magento is installed"
 
 echo "#END - fix owner on dynamic data"
-chown -R www-data:www-data /var/www/html/pub/static/*
-chown -R www-data:www-data /var/www/html/pub/media/*
-chown -R www-data:www-data /var/www/html/var/log/*
+chown -R www-data:www-data /var/www/html/pub/static
+chown -R www-data:www-data /var/www/html/pub/media
+chown -R www-data:www-data /var/www/html/var/log
+chown -R www-data:www-data /var/www/html/var/page_cache
