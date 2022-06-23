@@ -155,13 +155,15 @@ then
   fi # end of "Update database and/or configuration if changes"
   
   #5 - Optional: disable 2FA module
-  echo "#5 - Disable 2FA module"
-  set +e
-  su www-data -s /bin/bash -c 'until php bin/magento module:disable Magento_TwoFactorAuth --clear-static-content; do echo "ERROR: module:disable failed"; composer dump-autoload --no-dev --optimize --apcu --no-interaction; sleep 1; done;'
-  echo "DEBUG: list of enabled modules"
-  su www-data -s /bin/bash -c 'php bin/magento module:status'
-  su www-data -s /bin/bash -c 'until php bin/magento setup:di:compile; do echo "ERROR: di:compile failed"; composer dump-autoload --no-dev --optimize --apcu --no-interaction; sleep 1; done;'
-  set -e
+  echo "#5 - Disable 2FA module if available"
+  if php bin/magento module:status | grep -q 'TwoFactorAuth'; then
+    set +e
+    su www-data -s /bin/bash -c 'until php bin/magento module:disable Magento_TwoFactorAuth --clear-static-content; do echo "ERROR: module:disable failed"; composer dump-autoload --no-dev --optimize --apcu --no-interaction; sleep 1; done;'
+    echo "DEBUG: list of enabled modules"
+    su www-data -s /bin/bash -c 'php bin/magento module:status'
+    su www-data -s /bin/bash -c 'until php bin/magento setup:di:compile; do echo "ERROR: di:compile failed"; composer dump-autoload --no-dev --optimize --apcu --no-interaction; sleep 1; done;'
+    set -e
+  fi  
   
   #7 - Deploy static content with languages and themes
   echo "#7 - Deploy static content with languages and themes"
