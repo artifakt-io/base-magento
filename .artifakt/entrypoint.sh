@@ -167,9 +167,14 @@ then
   
   #7 - Deploy static content with languages and themes
   echo "#7 - Deploy static content with languages and themes"
-  #su www-data -s /bin/bash -c "env && php bin/magento setup:static-content:deploy -f --no-interaction --jobs ${ENV_MAGE_STATIC_JOBS:-5}  --content-version=${ARTIFAKT_BUILD_ID} --theme=${ENV_MAGE_THEME:-all} --exclude-theme=${ENV_MAGE_THEME_EXCLUDE:-none} --language=${ENV_MAGE_LANG:-all} --exclude-language=${ENV_MAGE_LANG_EXCLUDE:-none}"
-  su www-data -s /bin/bash -c "env && php bin/magento setup:static-content:deploy -f --no-interaction"
+  echo "DEBUG: /data/var ---------------------------------------------------------------------------"
   ls -la /data/var
+  echo "DEBUG: /var/www/html/generated --------------------------------------------------------------"
+  ls -la /var/www/html/generated
+  echo "DEBUG: /var/www/html/pub --------------------------------------------------------------------"
+  ls -la /var/www/html/pub
+  #su www-data -s /bin/bash -c "env && php bin/magento setup:static-content:deploy -f --no-interaction --jobs ${ENV_MAGE_STATIC_JOBS:-5}  --content-version=${ARTIFAKT_BUILD_ID} --theme=${ENV_MAGE_THEME:-all} --exclude-theme=${ENV_MAGE_THEME_EXCLUDE:-none} --language=${ENV_MAGE_LANG:-all} --exclude-language=${ENV_MAGE_LANG_EXCLUDE:-none}"
+  su www-data -s /bin/bash -c "until php bin/magento setup:static-content:deploy -f --no-interaction; do echo 'ERROR: module:disable failed'; composer dump-autoload --no-dev --optimize --apcu --no-interaction; sleep 1; done;"
   
   #8 - Flush cache
   echo "#8 - Flush cache"
