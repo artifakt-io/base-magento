@@ -2,6 +2,9 @@
 
 [ "$DEBUG" = "true" ] && set -x
 
+cp /.artifakt/wait-for /usr/local/bin/ &&\
+   chmod +x /usr/local/bin/wait-for
+
 chsh -s /bin/bash www-data
 
 ROOT=/var/log/artifakt
