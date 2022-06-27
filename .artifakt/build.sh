@@ -2,6 +2,10 @@
 
 [ "$DEBUG" = "true" ] && set -x
 
+apt-get update && \
+    apt-get install -y --no-install-recommends netcat && \
+    rm -rf /var/lib/apt/lists/*
+
 cp /.artifakt/wait-for /usr/local/bin/ &&\
    chmod +x /usr/local/bin/wait-for
 
