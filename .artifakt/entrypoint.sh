@@ -44,8 +44,14 @@ done
 
 # Check if Magento is installed
 tableCount=$(mysql -h $ARTIFAKT_MYSQL_HOST -u $ARTIFAKT_MYSQL_USER -p$ARTIFAKT_MYSQL_PASSWORD $ARTIFAKT_MYSQL_DATABASE_NAME -B -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$ARTIFAKT_MYSQL_DATABASE_NAME';" | grep -v "count");
-if [ $tableCount -gt 0 ]
+
+if [ $tableCount -eq 0 ]
 then
+  if [ $ARTIFAKT_IS_MAIN_INSTANCE == 1 ]
+  then
+    source /.artifakt/install.sh
+  fi
+else
   # Manage env.php
   if [ -f "app/etc/env.php.${ARTIFAKT_ENVIRONMENT_NAME}" ]
   then
@@ -124,7 +130,7 @@ then
     #4 - Sync with Nginx FPM container
     #    This is the longest part because of many files to check
     #    And because files are stored in EFS, not EBS
-    echo "#4 - Sync pub folder with Nginx FPM container"
+    #echo "#4 - Sync pub folder with Nginx FPM container"
     #persistent_folder=pub
     #mkdir -p /data/$persistent_folder /data/setup
     #cp -pur -L /var/www/html/$persistent_folder/* /data/$persistent_folder || true  
@@ -207,7 +213,6 @@ then
   #8 - Flush cache
   echo "#8 - Flush cache"
   su www-data -s /bin/bash -c 'php bin/magento cache:flush'
-  
 fi # end of "Check if Magento is installed"
 
 echo "#END - fix owner on dynamic data"
