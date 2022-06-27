@@ -85,15 +85,27 @@ then
     echo "#1 - Put 'current/live' release under maintenance if needed"
     if [[ $dbStatus == 2 || $configStatus == 2 ]]
     then
+        echo "Will enable maintenance."
         php bin/magento maintenance:enable
+        echo "Maintenance enabled."
     fi
 
     su www-data -s /bin/bash -c 'until composer dump-autoload --no-dev --optimize --apcu --no-interaction; do echo "composer dump-autoload failed" && sleep 1; done;'
 
+    echo "DEBUG: error Composer file not found"
+    echo "DEBUG --------------------------- START"    
+    ls -la 
+    echo "current dir:" 
+    pwd
+    echo "composer show"
+    composer show
+    echo "DEBUG --------------------------- END"    
+    
     #3 - Upgrade configuration if needed
     echo "#3 - Upgrade configuration if needed"
     if [ "$(bin/magento app:config:status)" != "Config files are up to date." ]
-    then
+    then      
+        echo "Configuration needs app:config:import";
         php bin/magento app:config:import --no-interaction
         echo "Configuration is now up to date.";
     else
@@ -104,6 +116,7 @@ then
     echo "#2 - Upgrade database if needed"
     if [ $dbStatus == 2 ]
     then
+        echo "Will run setup:db-schema:upgrade + setup:db-data:upgrade"
         php bin/magento setup:db-schema:upgrade --no-interaction
         php bin/magento setup:db-data:upgrade --no-interaction
     fi
@@ -148,7 +161,10 @@ then
     echo "#10 - Disable maintenance if needed"
     if [[ $dbStatus == 2 || $configStatus == 2 ]]
     then
+        echo "Will disable maintenance."
         php bin/magento maintenance:disable
+        echo "Maintenance disabled."
+        
     fi
   else
     # Non main instances must wait until database and configuration are up to date
