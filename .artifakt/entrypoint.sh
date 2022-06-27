@@ -42,10 +42,13 @@ for persistent_folder in ${PERSISTENT_FOLDER_LIST[@]}; do
     #chown -h -R -L www-data:www-data /var/www/html/$persistent_folder /data/$persistent_folder
 done
 
+echo "DEBUG: waiting for database to be available..."
 wait-for $ARTIFAKT_MYSQL_HOST:3306 --timeout=90 -- echo "Mysql is up, proceeding with starting sequence"
 
 # Check if Magento is installed
 tableCount=$(mysql -h $ARTIFAKT_MYSQL_HOST -u $ARTIFAKT_MYSQL_USER -p$ARTIFAKT_MYSQL_PASSWORD $ARTIFAKT_MYSQL_DATABASE_NAME -B -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$ARTIFAKT_MYSQL_DATABASE_NAME';" | grep -v "count");
+
+echo "DEBUG: found $tableCound tables in mysql"
 
 if [ $tableCount -eq 0 ]
 then
