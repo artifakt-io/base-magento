@@ -25,7 +25,7 @@ set -e
 
 echo "#4 - Sync shared folders with Nginx FPM container"
 
-PERSISTENT_FOLDER_LIST=('lib' 'pub/media' 'pub/static' 'var')
+PERSISTENT_FOLDER_LIST=('pub/media' 'pub/static' 'var')
 for persistent_folder in ${PERSISTENT_FOLDER_LIST[@]}; do
 
   echo "DEBUG: Init persistent folder /data/$persistent_folder"
