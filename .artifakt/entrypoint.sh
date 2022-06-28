@@ -173,9 +173,10 @@ else
     if [[ $dbStatus == 2 || $configStatus == 2 ]]
     then
         echo "Will disable maintenance."
+        echo "DEBUG: config file:"
+        cat /var/www/html/app/etc/env.php
         php bin/magento maintenance:disable
-        echo "Maintenance disabled."
-        
+        echo "Maintenance disabled."   
     fi
   else
     # Non main instances must wait until database and configuration are up to date
