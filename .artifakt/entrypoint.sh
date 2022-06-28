@@ -163,11 +163,17 @@ else
     #echo "#8 - Finally fix perms for web server"
     #chown -R www-data:www-data /var/log/artifakt
  
+    echo "DEBUG: magento commands BEFORE config:set"
+    php bin/magento
+
     #9 - Enable Varnish as cache backend
     echo "#9 - Enable Varnish as cache backend"
     php bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2
     php bin/magento setup:config:set --http-cache-hosts=${ARTIFAKT_REPLICA_LIST} --no-interaction
  
+    echo "DEBUG: magento commands AFTER config:set"
+    php bin/magento
+
     #10 - Disable maintenance if needed
     echo "#10 - Disable maintenance if needed"
     if [[ $dbStatus == 2 || $configStatus == 2 ]]
