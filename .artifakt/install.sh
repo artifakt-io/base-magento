@@ -47,3 +47,8 @@ php bin/magento setup:install \
   --use-rewrites="1" \
   --use-secure-admin="1" \
   --use-secure="0"
+
+if [ ! -z "$ARTIFAKT_DOMAIN" ]; then
+  php bin/magento config:set web/unsecure/base_url http://$ARTIFAKT_DOMAIN/
+  php bin/magento config:set web/secure/base_url https://$ARTIFAKT_DOMAIN/
+fi
