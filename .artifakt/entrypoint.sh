@@ -172,7 +172,7 @@ else
     php bin/magento setup:config:set --http-cache-hosts=${ARTIFAKT_REPLICA_LIST} --no-interaction
  
     echo "DEBUG: magento commands AFTER config:set"
-    php bin/magento
+    php bin/magento -vvv
 
     #10 - Disable maintenance if needed
     echo "#10 - Disable maintenance if needed"
