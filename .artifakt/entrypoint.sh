@@ -40,7 +40,10 @@ for persistent_folder in ${PERSISTENT_FOLDER_LIST[@]}; do
     mkdir -p /var/www/html && \
     ln -sfn /data/$persistent_folder /var/www/html/$persistent_folder
     #chown -h -R -L www-data:www-data /var/www/html/$persistent_folder /data/$persistent_folder
+    chown -h -L www-data:www-data /var/www/html/$persistent_folder /data/$persistent_folder
 done
+
+cp -pu -L ./pub/* /data/pub/ || true
 
 echo "DEBUG: waiting for database to be available..."
 wait-for $ARTIFAKT_MYSQL_HOST:3306 --timeout=90 -- echo "Mysql is up, proceeding with starting sequence"
