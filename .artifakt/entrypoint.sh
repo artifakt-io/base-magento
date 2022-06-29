@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+echo "DEBUG: check initial state of shared folders"
+ls -la /data
+ls -la /data/pub || true
+
 #0 Sync custom configuration for Varnish and Nginx
 echo "#0 - sync custom configuration files for Varnish and Nginx"
 set +e
