@@ -179,7 +179,7 @@ else
     #9 - Enable Varnish as cache backend
     echo "#9 - Enable Varnish as cache backend"
     php bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2
-    php bin/magento setup:config:set --http-cache-hosts=${ARTIFAKT_REPLICA_LIST} --no-interaction
+    #php bin/magento setup:config:set --http-cache-hosts=${ARTIFAKT_REPLICA_LIST} --no-interaction
  
     echo "DEBUG: config file AFTER config:set:"
     cat /var/www/html/app/etc/env.php
