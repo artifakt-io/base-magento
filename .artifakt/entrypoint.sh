@@ -2,7 +2,7 @@
 set -e
 
 echo "DEBUG: check initial state of shared folders"
-ls -la /data
+ls -la /data || true
 ls -la /data/pub || true
 
 #0 Sync custom configuration for Varnish and Nginx
