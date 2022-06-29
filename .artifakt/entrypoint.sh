@@ -43,6 +43,7 @@ for persistent_folder in ${PERSISTENT_FOLDER_LIST[@]}; do
     chown -h -L www-data:www-data /var/www/html/$persistent_folder /data/$persistent_folder
 done
 
+# finally, sync some php files from /pub location
 cp -pu -L ./pub/* /data/pub/ || true
 
 echo "DEBUG: waiting for database to be available..."
@@ -222,8 +223,11 @@ else
   ls -la /var/www/html/generated
   echo "DEBUG: /var/www/html/pub --------------------------------------------------------------------"
   ls -la /var/www/html/pub
-  #su www-data -s /bin/bash -c "env && php bin/magento setup:static-content:deploy -f --no-interaction --jobs ${ENV_MAGE_STATIC_JOBS:-5}  --content-version=${ARTIFAKT_BUILD_ID} --theme=${ENV_MAGE_THEME:-all} --exclude-theme=${ENV_MAGE_THEME_EXCLUDE:-none} --language=${ENV_MAGE_LANG:-all} --exclude-language=${ENV_MAGE_LANG_EXCLUDE:-none}"
-  su www-data -s /bin/bash -c "until php bin/magento setup:static-content:deploy -f --no-interaction; do echo 'ERROR: module:disable failed'; composer dump-autoload --no-dev --optimize --apcu --no-interaction; sleep 1; done;"
+  #switching to developer mode will disable the symlink behavior and copy real files
+  #  because symlinks are not compatible with shared folders, and confuse nginx container
+  su www-data -s /bin/bash -c "php bin/magento deploy:mode:set developer"
+  su www-data -s /bin/bash -c "env && php bin/magento setup:static-content:deploy -f --no-interaction --jobs ${ENV_MAGE_STATIC_JOBS:-5}  --content-version=${ARTIFAKT_BUILD_ID} --theme=${ENV_MAGE_THEME:-all} --exclude-theme=${ENV_MAGE_THEME_EXCLUDE:-none} --language=${ENV_MAGE_LANG:-all} --exclude-language=${ENV_MAGE_LANG_EXCLUDE:-none}"
+  su www-data -s /bin/bash -c "php bin/magento deploy:mode:set production"
   
   #8 - Flush cache
   echo "#8 - Flush cache"
