@@ -35,7 +35,7 @@ wait-for $ARTIFAKT_MYSQL_HOST:3306 --timeout=90 -- echo "Mysql is up, proceeding
 # Check if Magento is installed
 tableCount=$(mysql -h $ARTIFAKT_MYSQL_HOST -u $ARTIFAKT_MYSQL_USER -p$ARTIFAKT_MYSQL_PASSWORD $ARTIFAKT_MYSQL_DATABASE_NAME -B -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$ARTIFAKT_MYSQL_DATABASE_NAME';" | grep -v "count");
 
-echo "DEBUG: found $tableCound tables in mysql"
+echo "DEBUG: found $tableCount tables in mysql"
 
 if [ $tableCount -eq 0 ]
 then
@@ -45,6 +45,7 @@ then
   fi
 else
   # Manage env.php
+  echo "DEBUG: manage env.php"
   if [ -f "app/etc/env.php.${ARTIFAKT_ENVIRONMENT_NAME}" ]
   then
       mv "app/etc/env.php.${ARTIFAKT_ENVIRONMENT_NAME}" app/etc/env.php
@@ -55,7 +56,7 @@ else
         mv /.artifakt/app/etc/env.php.sample app/etc/env.php
       echo "INFO moved sample env. conf to env.php"
       else
-        echo INFO cannot find app/etc/env.php.sample, skipping 
+        echo "INFO cannot find app/etc/env.php.sample, skipping"
       fi
   fi
 
