@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+echo "DEBUG: check initial state of shared folders"
+ls -la /data || true
+ls -la /data/pub || true
+
 #0 Sync custom configuration for Varnish and Nginx
 echo "#0 - sync custom configuration files for Varnish and Nginx"
 set +e
@@ -23,8 +27,9 @@ set -e
 # ARTIFAKT_MYSQL_*
 # ARTIFAKT_ENVIRONMENT_NAME
 
-PERSISTENT_FOLDER_LIST=('pub/media' 'pub/static' 'var')
+echo "#4 - Sync shared folders with Nginx FPM container"
 
+PERSISTENT_FOLDER_LIST=('pub/media' 'pub/static' 'var')
 for persistent_folder in ${PERSISTENT_FOLDER_LIST[@]}; do
 
   echo "DEBUG: Init persistent folder /data/$persistent_folder"
@@ -32,19 +37,34 @@ for persistent_folder in ${PERSISTENT_FOLDER_LIST[@]}; do
 
   echo Copy modified/new files from container /var/www/html/$persistent_folder to volume /data/$persistent_folder
   echo "DEBUG: Copy modified/new files from container /var/www/html/$persistent_folder to volume /data/$persistent_folder"
-  cp -ur /var/www/html/$persistent_folder/* /data/$persistent_folder || true
+  cp -pur -L /var/www/html/$persistent_folder/* /data/$persistent_folder || true
 
   echo "DEBUG: Link /data/$persistent_folder directory to /var/www/html/$persistent_folder"
   rm -rf /var/www/html/$persistent_folder && \
     mkdir -p /var/www/html && \
     ln -sfn /data/$persistent_folder /var/www/html/$persistent_folder
     #chown -h -R -L www-data:www-data /var/www/html/$persistent_folder /data/$persistent_folder
+    chown -h -L www-data:www-data /var/www/html/$persistent_folder /data/$persistent_folder
 done
+
+# finally, sync some php files from /pub location
+cp -pu -L ./pub/* /data/pub/ || true
+
+echo "DEBUG: waiting for database to be available..."
+wait-for $ARTIFAKT_MYSQL_HOST:3306 --timeout=90 -- echo "Mysql is up, proceeding with starting sequence"
 
 # Check if Magento is installed
 tableCount=$(mysql -h $ARTIFAKT_MYSQL_HOST -u $ARTIFAKT_MYSQL_USER -p$ARTIFAKT_MYSQL_PASSWORD $ARTIFAKT_MYSQL_DATABASE_NAME -B -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$ARTIFAKT_MYSQL_DATABASE_NAME';" | grep -v "count");
-if [ $tableCount -gt 0 ]
+
+echo "DEBUG: found $tableCound tables in mysql"
+
+if [ $tableCount -eq 0 ]
 then
+  if [ $ARTIFAKT_IS_MAIN_INSTANCE == 1 ]
+  then
+    source /.artifakt/install.sh
+  fi
+else
   # Manage env.php
   if [ -f "app/etc/env.php.${ARTIFAKT_ENVIRONMENT_NAME}" ]
   then
@@ -84,15 +104,27 @@ then
     echo "#1 - Put 'current/live' release under maintenance if needed"
     if [[ $dbStatus == 2 || $configStatus == 2 ]]
     then
+        echo "Will enable maintenance."
         php bin/magento maintenance:enable
+        echo "Maintenance enabled."
     fi
 
     su www-data -s /bin/bash -c 'until composer dump-autoload --no-dev --optimize --apcu --no-interaction; do echo "composer dump-autoload failed" && sleep 1; done;'
 
+    echo "DEBUG: error Composer file not found"
+    echo "DEBUG --------------------------- START"    
+    ls -la 
+    echo "current dir:" 
+    pwd
+    echo "composer show"
+    composer show
+    echo "DEBUG --------------------------- END"    
+    
     #3 - Upgrade configuration if needed
     echo "#3 - Upgrade configuration if needed"
     if [ "$(bin/magento app:config:status)" != "Config files are up to date." ]
-    then
+    then      
+        echo "Configuration needs app:config:import";
         php bin/magento app:config:import --no-interaction
         echo "Configuration is now up to date.";
     else
@@ -103,6 +135,7 @@ then
     echo "#2 - Upgrade database if needed"
     if [ $dbStatus == 2 ]
     then
+        echo "Will run setup:db-schema:upgrade + setup:db-data:upgrade"
         php bin/magento setup:db-schema:upgrade --no-interaction
         php bin/magento setup:db-data:upgrade --no-interaction
     fi
@@ -110,11 +143,14 @@ then
     #4 - Sync with Nginx FPM container
     #    This is the longest part because of many files to check
     #    And because files are stored in EFS, not EBS
-    echo "#4 - Sync pub folder with Nginx FPM container"
-    persistent_folder=pub
-    mkdir -p /data/$persistent_folder /data/setup
-    cp -pur /var/www/html/$persistent_folder/* /data/$persistent_folder || true  
-    cp -pur /var/www/html/setup/* /data/setup || true  
+    #echo "#4 - Sync pub folder with Nginx FPM container"
+    #persistent_folder=pub
+    #mkdir -p /data/$persistent_folder /data/setup
+    #cp -pur -L /var/www/html/$persistent_folder/* /data/$persistent_folder || true  
+    #cp -pur -L /var/www/html/setup/* /data/setup || true  
+    #cp -pur -L /var/www/html/lib/* /data/lib || true
+    #cp -pur -L /var/www/html/code/* /data/code || true
+    #cp -pur -L /var/www/html/app/* /data/app || true
     
     #6 - remove generated content and rebuild page generation
     echo "#6 - Remove generated content and rebuild page generation"
@@ -135,16 +171,30 @@ then
     #echo "#8 - Finally fix perms for web server"
     #chown -R www-data:www-data /var/log/artifakt
  
+    echo "DEBUG: magento commands BEFORE config:set"
+    php bin/magento
+    echo "DEBUG: config file BEFORE config:set:"
+    cat /var/www/html/app/etc/env.php
+
     #9 - Enable Varnish as cache backend
     echo "#9 - Enable Varnish as cache backend"
     php bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2
-    php bin/magento setup:config:set --http-cache-hosts=${ARTIFAKT_REPLICA_LIST} --no-interaction
+    #php bin/magento setup:config:set --http-cache-hosts=${ARTIFAKT_REPLICA_LIST} --no-interaction
  
+    echo "DEBUG: config file AFTER config:set:"
+    cat /var/www/html/app/etc/env.php
+    echo "DEBUG: magento commands AFTER config:set"
+    php bin/magento -vvv
+
     #10 - Disable maintenance if needed
     echo "#10 - Disable maintenance if needed"
     if [[ $dbStatus == 2 || $configStatus == 2 ]]
     then
+        echo "Will disable maintenance."
+        echo "DEBUG: config file:"
+        cat /var/www/html/app/etc/env.php
         php bin/magento maintenance:disable
+        echo "Maintenance disabled."   
     fi
   else
     # Non main instances must wait until database and configuration are up to date
@@ -155,21 +205,45 @@ then
   fi # end of "Update database and/or configuration if changes"
   
   #5 - Optional: disable 2FA module
-  echo "#5 - Disable 2FA module"
-  set +e
-  su www-data -s /bin/bash -c 'until php bin/magento module:disable Magento_TwoFactorAuth --clear-static-content; do echo "ERROR: module:disable failed"; composer dump-autoload --no-dev --optimize --apcu --no-interaction; sleep 1; done;'
-  echo "DEBUG: list of enabled modules"
-  su www-data -s /bin/bash -c 'php bin/magento module:status'
-  su www-data -s /bin/bash -c 'until php bin/magento setup:di:compile; do echo "ERROR: di:compile failed"; composer dump-autoload --no-dev --optimize --apcu --no-interaction; sleep 1; done;'
-  set -e
+  echo "#5 - Disable 2FA module if available"
+  if php bin/magento module:status | grep -q 'TwoFactorAuth'; then
+    set +e
+    su www-data -s /bin/bash -c 'until php bin/magento module:disable Magento_TwoFactorAuth --clear-static-content; do echo "ERROR: module:disable failed"; composer dump-autoload --no-dev --optimize --apcu --no-interaction; sleep 1; done;'
+    echo "DEBUG: list of enabled modules"
+    su www-data -s /bin/bash -c 'php bin/magento module:status'
+    su www-data -s /bin/bash -c 'until php bin/magento setup:di:compile; do echo "ERROR: di:compile failed"; composer dump-autoload --no-dev --optimize --apcu --no-interaction; sleep 1; done;'
+    set -e
+  fi  
+
+  #6 fix owner/permissions on var/{cache,di,generation,page_cache,view_preprocessed}
+  echo "#6 -  fix owner/permissions on var/{cache,di,generation,page_cache,view_preprocessed}"
+  find var generated vendor pub/static pub/media app/etc -type f -exec chown www-data:www-data {} +
+  find var generated vendor pub/static pub/media app/etc -type d -exec chown www-data:www-data {} +
+
+  find var generated vendor pub/static pub/media app/etc -type f -exec chmod g+w {} +
+  find var generated vendor pub/static pub/media app/etc -type d -exec chmod g+ws {} +
   
   #7 - Deploy static content with languages and themes
   echo "#7 - Deploy static content with languages and themes"
-  su www-data -s /bin/bash -c "php bin/magento setup:static-content:deploy -f --no-interaction --jobs ${ENV_MAGE_STATIC_JOBS}  --content-version=${ARTIFAKT_BUILD_ID} --theme=${ENV_MAGE_THEME:-all} --exclude-theme=${ENV_MAGE_THEME_EXCLUDE:-none} --language=${ENV_MAGE_LANG:-all} --exclude-language=${ENV_MAGE_LANG_EXCLUDE:-none}"
+  echo "DEBUG: /data/var ---------------------------------------------------------------------------"
   ls -la /data/var
+  echo "DEBUG: /var/www/html/generated --------------------------------------------------------------"
+  ls -la /var/www/html/generated
+  echo "DEBUG: /var/www/html/pub --------------------------------------------------------------------"
+  ls -la /var/www/html/pub
+  #switching to developer mode will disable the symlink behavior and copy real files
+  #  because symlinks are not compatible with shared folders, and confuse nginx container
+  su www-data -s /bin/bash -c "php bin/magento deploy:mode:set developer"
+  su www-data -s /bin/bash -c "env && php bin/magento setup:static-content:deploy -f --no-interaction --jobs ${ENV_MAGE_STATIC_JOBS:-5}  --content-version=${ARTIFAKT_BUILD_ID} --theme=${ENV_MAGE_THEME:-all} --exclude-theme=${ENV_MAGE_THEME_EXCLUDE:-none} --language=${ENV_MAGE_LANG:-all} --exclude-language=${ENV_MAGE_LANG_EXCLUDE:-none}"
+  su www-data -s /bin/bash -c "php bin/magento deploy:mode:set production"
   
   #8 - Flush cache
   echo "#8 - Flush cache"
   su www-data -s /bin/bash -c 'php bin/magento cache:flush'
-  
 fi # end of "Check if Magento is installed"
+
+echo "#END - fix owner on dynamic data"
+chown -R www-data:www-data /var/www/html/pub/static
+chown -R www-data:www-data /var/www/html/pub/media
+chown -R www-data:www-data /var/www/html/var/log
+chown -R www-data:www-data /var/www/html/var/page_cache
