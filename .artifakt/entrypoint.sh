@@ -29,6 +29,7 @@ done
 cp -pu -L ./pub/* /data/pub/ || true
 
 echo "DEBUG: waiting for database to be available..."
+chmod +x /.artifakt/wait-for
 wait-for $ARTIFAKT_MYSQL_HOST:3306 --timeout=90 -- echo "Mysql is up, proceeding with starting sequence"
 
 # Check if Magento is installed
