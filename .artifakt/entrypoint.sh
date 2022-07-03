@@ -28,6 +28,8 @@ done
 # finally, sync some php files from /pub location
 cp -pu -L ./pub/* /data/pub/ || true
 
+chown -R www-data:www-data /var/www/html/var/log /data/var/log
+
 echo "DEBUG: waiting for database to be available..."
 chmod +x /.artifakt/wait-for
 wait-for $ARTIFAKT_MYSQL_HOST:3306 --timeout=90 -- echo "Mysql is up, proceeding with starting sequence"
@@ -205,3 +207,5 @@ chown -R www-data:www-data /var/www/html/pub/static
 chown -R www-data:www-data /var/www/html/pub/media
 chown -R www-data:www-data /var/www/html/var/log
 chown -R www-data:www-data /var/www/html/var/page_cache
+#chown -R www-data:www-data /var/www/html/var/session
+
