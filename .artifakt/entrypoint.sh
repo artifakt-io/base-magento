@@ -192,7 +192,7 @@ else
   #switching to developer mode will disable the symlink behavior and copy real files
   #  because symlinks are not compatible with shared folders, and confuse nginx container
   su www-data -s /bin/bash -c "php bin/magento deploy:mode:set developer"
-  su www-data -s /bin/bash -c "env && until php bin/magento setup:static-content:deploy -f --no-interaction --jobs ${ENV_MAGE_STATIC_JOBS:-5}  --content-version=${ARTIFAKT_BUILD_ID} --theme=${ENV_MAGE_THEME:-all} --exclude-theme=${ENV_MAGE_THEME_EXCLUDE:-none} --language=${ENV_MAGE_LANG:-all} --exclude-language=${ENV_MAGE_LANG_EXCLUDE:-none};  do echo "ERROR: setup:static-content:deploy failed"; composer dump-autoload --no-dev --optimize --apcu --no-interaction; sleep 1; done;"
+  su www-data -s /bin/bash -c "env && until php bin/magento setup:static-content:deploy -f --no-interaction --jobs ${ENV_MAGE_STATIC_JOBS:-5}  --content-version=${ARTIFAKT_BUILD_ID} --theme=${ENV_MAGE_THEME:-all} --exclude-theme=${ENV_MAGE_THEME_EXCLUDE:-none} --language=${ENV_MAGE_LANG:-all} --exclude-language=${ENV_MAGE_LANG_EXCLUDE:-none};  do echo 'ERROR: setup:static-content:deploy failed'; composer dump-autoload --no-dev --optimize --apcu --no-interaction; sleep 1; done;"
   su www-data -s /bin/bash -c "php bin/magento deploy:mode:set production"
   
   #8 - Flush cache
