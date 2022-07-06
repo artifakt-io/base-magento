@@ -8,8 +8,12 @@
     ],
     "config": {
         "preferred-install": "dist",
-        "sort-packages": true
-    },
+        "sort-packages": true,
+        "allow-plugins": {
+            "magento/*": true,
+            "laminas/*": true
+        }
+    },    
     "version": "2.4.2",
     "require": {
         "php": "~7.3.0||~7.4.0",
