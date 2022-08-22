@@ -105,7 +105,10 @@ else
     if [[ $dbStatus == 2 || $configStatus == 2 ]]
     then
         echo "Will enable maintenance."
-        php bin/magento maintenance:enable
+        # added composer dump-autoload to fix "class does not exist" errors
+        su www-data -s /bin/bash -c 'until composer dump-autoload --no-dev --optimize --apcu --no-interaction; do echo "ERROR: composer dump-autoload failed" && sleep 1; done;'
+        su www-data -s /bin/bash -c 'php bin/magento maintenance:enable' 
+        su www-data -s /bin/bash -c 'until composer dump-autoload --no-dev --optimize --apcu --no-interaction; do echo "ERROR: composer dump-autoload failed" && sleep 1; done;'
         echo "Maintenance enabled."
     fi
 
@@ -230,7 +233,10 @@ else
         echo "Will disable maintenance."
         echo "DEBUG: config file:"
         cat /var/www/html/app/etc/env.php
-        php bin/magento maintenance:disable
+        # added composer dump-autoload to fix "class does not exist" errors
+        su www-data -s /bin/bash -c 'until composer dump-autoload --no-dev --optimize --apcu --no-interaction; do echo "ERROR: composer dump-autoload failed" && sleep 1; done;'
+        su www-data -s /bin/bash -c 'php bin/magento maintenance:disable' 
+        su www-data -s /bin/bash -c 'until composer dump-autoload --no-dev --optimize --apcu --no-interaction; do echo "ERROR: composer dump-autoload failed" && sleep 1; done;'
         echo "Maintenance disabled."   
     fi
   else
