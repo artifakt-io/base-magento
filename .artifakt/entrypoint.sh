@@ -186,6 +186,43 @@ else
     echo "DEBUG: magento commands AFTER config:set"
     php bin/magento -vvv
 
+    #5 - Optional: disable 2FA module
+    echo "#5 - Disable 2FA module if available"
+    if php bin/magento module:status | grep -q 'TwoFactorAuth'; then
+      set +e
+      su www-data -s /bin/bash -c 'until php bin/magento module:disable Magento_TwoFactorAuth --clear-static-content; do echo "ERROR: module:disable failed"; composer dump-autoload --no-dev --optimize --apcu --no-interaction; sleep 1; done;'
+      echo "DEBUG: list of enabled modules"
+      su www-data -s /bin/bash -c 'php bin/magento module:status'
+      su www-data -s /bin/bash -c 'until php bin/magento setup:di:compile; do echo "ERROR: di:compile failed"; composer dump-autoload --no-dev --optimize --apcu --no-interaction; sleep 1; done;'
+      set -e
+    fi  
+
+    #6 fix owner/permissions on var/{cache,di,generation,page_cache,view_preprocessed}
+    echo "#6 -  fix owner/permissions on var/{cache,di,generation,page_cache,view_preprocessed}"
+    find var generated vendor pub/static pub/media app/etc -type f -exec chown www-data:www-data {} +
+    find var generated vendor pub/static pub/media app/etc -type d -exec chown www-data:www-data {} +
+
+    find var generated vendor pub/static pub/media app/etc -type f -exec chmod g+w {} +
+    find var generated vendor pub/static pub/media app/etc -type d -exec chmod g+ws {} +
+
+    #7 - Deploy static content with languages and themes
+    echo "#7 - Deploy static content with languages and themes"
+    echo "DEBUG: /data/var ---------------------------------------------------------------------------"
+    ls -la /data/var
+    echo "DEBUG: /var/www/html/generated --------------------------------------------------------------"
+    ls -la /var/www/html/generated
+    echo "DEBUG: /var/www/html/pub --------------------------------------------------------------------"
+    ls -la /var/www/html/pub
+    #switching to developer mode will disable the symlink behavior and copy real files
+    #  because symlinks are not compatible with shared folders, and confuse nginx container
+    su www-data -s /bin/bash -c "php bin/magento deploy:mode:set developer"
+    su www-data -s /bin/bash -c "env && php bin/magento setup:static-content:deploy -f --no-interaction --jobs ${ENV_MAGE_STATIC_JOBS:-5}  --content-version=${ARTIFAKT_BUILD_ID} --theme=${ENV_MAGE_THEME:-all} --exclude-theme=${ENV_MAGE_THEME_EXCLUDE:-none} --language=${ENV_MAGE_LANG:-all} --exclude-language=${ENV_MAGE_LANG_EXCLUDE:-none}"
+    su www-data -s /bin/bash -c "php bin/magento deploy:mode:set production"
+
+    #8 - Flush cache
+    echo "#8 - Flush cache"
+    su www-data -s /bin/bash -c 'php bin/magento cache:flush'
+
     #10 - Disable maintenance if needed
     echo "#10 - Disable maintenance if needed"
     if [[ $dbStatus == 2 || $configStatus == 2 ]]
@@ -203,43 +240,6 @@ else
         sleep 10
     done
   fi # end of "Update database and/or configuration if changes"
-  
-  #5 - Optional: disable 2FA module
-  echo "#5 - Disable 2FA module if available"
-  if php bin/magento module:status | grep -q 'TwoFactorAuth'; then
-    set +e
-    su www-data -s /bin/bash -c 'until php bin/magento module:disable Magento_TwoFactorAuth --clear-static-content; do echo "ERROR: module:disable failed"; composer dump-autoload --no-dev --optimize --apcu --no-interaction; sleep 1; done;'
-    echo "DEBUG: list of enabled modules"
-    su www-data -s /bin/bash -c 'php bin/magento module:status'
-    su www-data -s /bin/bash -c 'until php bin/magento setup:di:compile; do echo "ERROR: di:compile failed"; composer dump-autoload --no-dev --optimize --apcu --no-interaction; sleep 1; done;'
-    set -e
-  fi  
-
-  #6 fix owner/permissions on var/{cache,di,generation,page_cache,view_preprocessed}
-  echo "#6 -  fix owner/permissions on var/{cache,di,generation,page_cache,view_preprocessed}"
-  find var generated vendor pub/static pub/media app/etc -type f -exec chown www-data:www-data {} +
-  find var generated vendor pub/static pub/media app/etc -type d -exec chown www-data:www-data {} +
-
-  find var generated vendor pub/static pub/media app/etc -type f -exec chmod g+w {} +
-  find var generated vendor pub/static pub/media app/etc -type d -exec chmod g+ws {} +
-  
-  #7 - Deploy static content with languages and themes
-  echo "#7 - Deploy static content with languages and themes"
-  echo "DEBUG: /data/var ---------------------------------------------------------------------------"
-  ls -la /data/var
-  echo "DEBUG: /var/www/html/generated --------------------------------------------------------------"
-  ls -la /var/www/html/generated
-  echo "DEBUG: /var/www/html/pub --------------------------------------------------------------------"
-  ls -la /var/www/html/pub
-  #switching to developer mode will disable the symlink behavior and copy real files
-  #  because symlinks are not compatible with shared folders, and confuse nginx container
-  su www-data -s /bin/bash -c "php bin/magento deploy:mode:set developer"
-  su www-data -s /bin/bash -c "env && php bin/magento setup:static-content:deploy -f --no-interaction --jobs ${ENV_MAGE_STATIC_JOBS:-5}  --content-version=${ARTIFAKT_BUILD_ID} --theme=${ENV_MAGE_THEME:-all} --exclude-theme=${ENV_MAGE_THEME_EXCLUDE:-none} --language=${ENV_MAGE_LANG:-all} --exclude-language=${ENV_MAGE_LANG_EXCLUDE:-none}"
-  su www-data -s /bin/bash -c "php bin/magento deploy:mode:set production"
-  
-  #8 - Flush cache
-  echo "#8 - Flush cache"
-  su www-data -s /bin/bash -c 'php bin/magento cache:flush'
 fi # end of "Check if Magento is installed"
 
 echo "#END - fix owner on dynamic data"
