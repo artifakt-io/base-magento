@@ -100,15 +100,19 @@ else
 
     echo DEBUG dbStatus=$dbStatus configStatus=$configStatus
 
+    chown -R www-data:www-data /var/www/html/var/log
+    echo DEBUG log perms
+    ls -la /var/www/html/var/log
+    
+    su www-data -s /bin/bash -c 'until composer dump-autoload --no-dev --optimize --apcu --no-interaction; do echo "ERROR: composer dump-autoload failed" && sleep 1; done;'
+        
     #1 - Put 'current/live' release under maintenance if needed
     echo "#1 - Put 'current/live' release under maintenance if needed"
     if [[ $dbStatus == 2 || $configStatus == 2 ]]
     then
         echo "Will enable maintenance."
         # added composer dump-autoload to fix "class does not exist" errors
-        su www-data -s /bin/bash -c 'until composer dump-autoload --no-dev --optimize --apcu --no-interaction; do echo "ERROR: composer dump-autoload failed" && sleep 1; done;'
         su www-data -s /bin/bash -c 'php bin/magento maintenance:enable' 
-        su www-data -s /bin/bash -c 'until composer dump-autoload --no-dev --optimize --apcu --no-interaction; do echo "ERROR: composer dump-autoload failed" && sleep 1; done;'
         echo "Maintenance enabled."
     fi
 
@@ -128,7 +132,7 @@ else
     if [ "$(bin/magento app:config:status)" != "Config files are up to date." ]
     then      
         echo "Configuration needs app:config:import";
-        php bin/magento app:config:import --no-interaction
+        su www-data -s /bin/bash -c 'php bin/magento app:config:import --no-interaction'
         echo "Configuration is now up to date.";
     else
         echo "Configuration is already up to date.";
@@ -139,8 +143,8 @@ else
     if [ $dbStatus == 2 ]
     then
         echo "Will run setup:db-schema:upgrade + setup:db-data:upgrade"
-        php bin/magento setup:db-schema:upgrade --no-interaction
-        php bin/magento setup:db-data:upgrade --no-interaction
+        su www-data -s /bin/bash -c 'php bin/magento setup:db-schema:upgrade --no-interaction'
+        su www-data -s /bin/bash -c 'php bin/magento setup:db-data:upgrade --no-interaction'
     fi
     
     #4 - Sync with Nginx FPM container
@@ -181,7 +185,8 @@ else
 
     #9 - Enable Varnish as cache backend
     echo "#9 - Enable Varnish as cache backend"
-    php bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2
+    su www-data -s /bin/bash -c 'php bin/magento config:set --scope=default --scope-code=0 system/full_page_cache/caching_application 2'
+    # below command disabled, and replaced by code in env.php.sample 
     #php bin/magento setup:config:set --http-cache-hosts=${ARTIFAKT_REPLICA_LIST} --no-interaction
  
     echo "DEBUG: config file AFTER config:set:"
@@ -216,8 +221,11 @@ else
     ls -la /var/www/html/generated
     echo "DEBUG: /var/www/html/pub --------------------------------------------------------------------"
     ls -la /var/www/html/pub
-    #switching to developer mode will disable the symlink behavior and copy real files
-    #  because symlinks are not compatible with shared folders, and confuse nginx container
+
+    # production mode sometime creates symlinks (to be confirmed with magento expert) 
+    # switching to developer mode seems to disable the symlink behavior and copy real files
+    # because symlinks are not compatible with shared folders, and confuse nginx container
+    # the counterpart is a performance penalty
     su www-data -s /bin/bash -c "php bin/magento deploy:mode:set developer"
     su www-data -s /bin/bash -c "env && php bin/magento setup:static-content:deploy -f --no-interaction --jobs ${ENV_MAGE_STATIC_JOBS:-5}  --content-version=${ARTIFAKT_BUILD_ID} --theme=${ENV_MAGE_THEME:-all} --exclude-theme=${ENV_MAGE_THEME_EXCLUDE:-none} --language=${ENV_MAGE_LANG:-all} --exclude-language=${ENV_MAGE_LANG_EXCLUDE:-none}"
     su www-data -s /bin/bash -c "php bin/magento deploy:mode:set production"
