@@ -101,6 +101,7 @@ else
     echo DEBUG dbStatus=$dbStatus configStatus=$configStatus
 
     chown -R www-data:www-data /var/www/html/var/log
+    chmod 755 /var/www/html/var
     echo DEBUG var perms
     ls -la /var/www/html/var
     echo DEBUG log perms
