@@ -268,3 +268,4 @@ chown -R www-data:www-data /var/www/html/pub/static
 chown -R www-data:www-data /var/www/html/pub/media
 chown -R www-data:www-data /var/www/html/var/log
 chown -R www-data:www-data /var/www/html/var/page_cache
+chown -R www-data:www-data /var/www/html/var/session
