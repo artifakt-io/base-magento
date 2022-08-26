@@ -104,6 +104,8 @@ else
     chmod 755 /var/www/html/var
     echo DEBUG var perms
     ls -la /var/www/html/var
+    ls -la /data
+    ls -la /data/var
     echo DEBUG log perms
     ls -la /var/www/html/var/log
     
