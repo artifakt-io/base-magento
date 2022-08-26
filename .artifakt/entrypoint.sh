@@ -117,7 +117,7 @@ else
     then
         echo "Will enable maintenance"
         # remove maintenance flag if still here
-        rm -f /mnt/shared/data/var/.maintenance.flag
+        rm -f /var/www/html/var/.maintenance.flag
         # added composer dump-autoload to fix "class does not exist" errors
         su www-data -s /bin/bash -c 'php bin/magento maintenance:enable' 
         echo "Maintenance enabled."
