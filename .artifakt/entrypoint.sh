@@ -115,7 +115,9 @@ else
     echo "#1 - Put 'current/live' release under maintenance if needed"
     if [[ $dbStatus == 2 || $configStatus == 2 ]]
     then
-        echo "Will enable maintenance."
+        echo "Will enable maintenance"
+        # remove maintenance flag if still here
+        rm -f /mnt/shared/data/var/.maintenance.flag
         # added composer dump-autoload to fix "class does not exist" errors
         su www-data -s /bin/bash -c 'php bin/magento maintenance:enable' 
         echo "Maintenance enabled."
