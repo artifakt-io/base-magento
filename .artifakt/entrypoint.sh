@@ -27,6 +27,9 @@ set -e
 # ARTIFAKT_MYSQL_*
 # ARTIFAKT_ENVIRONMENT_NAME
 
+${ARTIFAKT_DOMAIN:=localhost}
+export ARTIFAKT_DOMAIN
+
 echo "#4 - Sync shared folders with Nginx FPM container"
 
 PERSISTENT_FOLDER_LIST=('pub/media' 'pub/static' 'var')
