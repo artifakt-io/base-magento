@@ -27,7 +27,7 @@ set -e
 # ARTIFAKT_MYSQL_*
 # ARTIFAKT_ENVIRONMENT_NAME
 
-${ARTIFAKT_DOMAIN:=localhost}
+ARTIFAKT_DOMAIN=${ARTIFAKT_DOMAIN:=localhost}
 export ARTIFAKT_DOMAIN
 
 echo "#4 - Sync shared folders with Nginx FPM container"
