@@ -18,7 +18,6 @@ php bin/magento setup:install \
   --admin-use-security-key="1" \
   --admin-user="admin" \
   --backend-frontname="admin" \
-  --base-url="http://localhost/" \
   --cache-backend-redis-db="0" \
   --cache-backend-redis-password='' \
   --cache-backend-redis-port="${ARTIFAKT_REDIS_PORT}" \
