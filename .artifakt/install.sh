@@ -2,6 +2,10 @@
 
 [ "$DEBUG" = "true" ] && set -x
 
+echo "DEBUG: start install script, env:"
+
+env | grep ARTIFAKT
+
 php bin/magento setup:install \
   --admin-email="email@example.com" \
   --admin-firstname="John" \
