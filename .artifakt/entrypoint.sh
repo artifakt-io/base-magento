@@ -54,9 +54,9 @@ done
 cp -pu -L ./pub/* /data/pub/ || true
 
 echo "DEBUG: waiting for database to be available..."
-wait-for $ARTIFAKT_MYSQL_HOST:3306 --timeout=90 -- echo "Mysql is up, proceeding with starting sequence"
+wait-for $ARTIFAKT_MYSQL_HOST:$ARTIFAKT_MYSQL_PORT --timeout=90 -- echo "Mysql is up, proceeding with starting sequence"
 
-wait-for $ARTIFAKT_REDIS_HOST:6379 --timeout=90 -- echo "Redis is up, proceeding with starting sequence"
+wait-for $ARTIFAKT_REDIS_HOST:$ARTIFAKT_REDIS_PORT --timeout=90 -- echo "Redis is up, proceeding with starting sequence"
 
 wait-for $ARTIFAKT_ES_HOST:$ARTIFAKT_ES_PORT --timeout=90 -- echo "Elasticsearch is up, proceeding with starting sequence"
 
