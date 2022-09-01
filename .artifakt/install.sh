@@ -7,8 +7,8 @@ echo "DEBUG: start install script, env:"
 env | grep ARTIFAKT
 
 # on first install, use the custom env.php file from Artifakt
-cp /.artifakt/app/etc/env.php.sample /var/www/html/app/etc/env.php
-chown www-data:www-data /var/www/html/app/etc/env.php
+#cp /.artifakt/app/etc/env.php.sample /var/www/html/app/etc/env.php
+#chown www-data:www-data /var/www/html/app/etc/env.php
 
 php bin/magento setup:install \
   --admin-email="email@example.com" \
