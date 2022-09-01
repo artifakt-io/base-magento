@@ -9,7 +9,6 @@ env | grep ARTIFAKT
 # on first install, use the custom env.php file from Artifakt
 cp /.artifakt/app/etc/env.php.sample /var/www/html/app/etc/env.php
 chown www-data:www-data /var/www/html/app/etc/env.php
-php bin/magento app:config:import --no-interaction
 
 php bin/magento setup:install \
   --admin-email="email@example.com" \
@@ -61,3 +60,5 @@ if [ ! -z "$ARTIFAKT_DOMAIN" ]; then
   php bin/magento config:set  --lock-env web/unsecure/base_url http://$ARTIFAKT_DOMAIN/
   php bin/magento config:set  --lock-env web/secure/base_url https://$ARTIFAKT_DOMAIN/
 fi
+
+php bin/magento app:config:import --no-interaction
