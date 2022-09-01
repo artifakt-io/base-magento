@@ -59,12 +59,13 @@ wait-for $ARTIFAKT_MYSQL_HOST:3306 --timeout=90 -- echo "Mysql is up, proceeding
 # Check if Magento is installed
 tableCount=$(mysql -h $ARTIFAKT_MYSQL_HOST -u $ARTIFAKT_MYSQL_USER -p$ARTIFAKT_MYSQL_PASSWORD $ARTIFAKT_MYSQL_DATABASE_NAME -B -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$ARTIFAKT_MYSQL_DATABASE_NAME';" | grep -v "count");
 
-echo "DEBUG: found $tableCound tables in mysql"
+echo "DEBUG: found $tableCount tables in mysql"
 
 if [ $tableCount -eq 0 ]
 then
   if [ $ARTIFAKT_IS_MAIN_INSTANCE == 1 ]
   then
+    echo "DEBUG: triggering first install script"
     source /.artifakt/install.sh
   fi
 else
