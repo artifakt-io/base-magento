@@ -138,6 +138,13 @@ else
     composer show
     echo "DEBUG --------------------------- END"    
     
+    # because base magento image is first running without ARTIFAKT_DOMAIN...
+    # ... we give the opportunity to force the ARTIFAKT_DOMAIN on second build/deploy here
+    if [ ! -z "$ARTIFAKT_DOMAIN" ]; then
+      php bin/magento config:set  --lock-env web/unsecure/base_url http://$ARTIFAKT_DOMAIN/
+      php bin/magento config:set  --lock-env web/secure/base_url https://$ARTIFAKT_DOMAIN/
+    fi
+
     #3 - Upgrade configuration if needed
     echo "#3 - Upgrade configuration if needed"
     if [ "$(bin/magento app:config:status)" != "Config files are up to date." ]
