@@ -1,87 +1,120 @@
 version: '3'
 
-services:
-
-    proxy:
-        image: jwilder/nginx-proxy
-        container_name: base-magento-proxy
-        restart: always
-        ports:
-            - "8000:80"
-            - "8443:443"
-        volumes:
-            - /var/run/docker.sock:/tmp/docker.sock:ro
-            - ./certs:/etc/nginx/certs
-
-    proxy-companion:
-        image: registry.artifakt.io/nginx-proxy-companion:latest
-        restart: always
-        environment: 
-            - "NGINX_PROXY_CONTAINER=base-magento-proxy"
-        volumes:
-            - /var/run/docker.sock:/var/run/docker.sock:ro
-            - ./certs:/etc/nginx/certs
-
-    app:
-        build: .
-        image: base-magento
-        env_file:
-            - ./.env
-        volumes:
-#            - ".:/var/www/html" # Uncomment to develop locally
-            - "data:/data"
-        restart: always
-        environment:
-            VIRTUAL_HOST: "localhost"
-            SELF_SIGNED_HOST: "localhost"
-
-    mysql:
-        image: mysql/mysql-server:8.0
-        container_name: mysql
-        restart: always
-        volumes:
-            - ./.artifakt/etc/mysqld.cnf:/etc/mysql/conf.d/mysqld.cnf:ro
-            - mysql-data:/var/lib/mysql
-        environment:
-            MYSQL_DATABASE: ${ARTIFAKT_MYSQL_DATABASE_NAME:-changeme}
-            MYSQL_USER: ${ARTIFAKT_MYSQL_USER:-changeme}
-            MYSQL_PASSWORD: ${ARTIFAKT_MYSQL_PASSWORD:-s3cr3t!}
-            MYSQL_RANDOM_ROOT_PASSWORD: "true"
-        ports:
-            - "3306:3306"
-
-    redis:
-        image: redis:6.0-alpine
-        container_name: redis
-        restart: always
-        command: redis-server /usr/local/etc/redis/redis.conf
-        volumes:
-            - ./.artifakt/etc/redis.conf:/usr/local/etc/redis/redis.conf:ro
-        ports:
-            - "6379:6379"
-            
-    elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
-        container_name: elasticsearch
-        restart: always
-        environment:
-            - node.name=es01
-            - discovery.type=single-node
-            - bootstrap.memory_lock=true
-        volumes:
-            - es-data:/usr/share/elasticsearch/data:rw
-        ports:
-            - "9200:9200"
-            - "9300:9300"
-        ulimits:
-            memlock:
-                soft: -1
-                hard: -1
-            nofile:
-                soft: 65536
-                hard: 65536
-
 volumes:
-    mysql-data:
-    es-data:
-    data:
+  placeholder-data:
+  varnish-data:
+  varnish-conf:
+  nginxfpm-conf:
+  mysql-data:
+  redis-data:
+  elasticsearch-data:
+  data:
+  varnish-conf:
+  nginxfpm-conf: 
+
+services:
+  proxy:
+    image: jwilder/nginx-proxy
+    container_name: system_nginx-proxy_1
+    restart: always
+    ports:
+        - "8000:80"
+        - "443:443"
+    volumes:
+        - /var/run/docker.sock:/tmp/docker.sock:ro
+        - ./docker_local/nginx-proxy/custom_proxy_settings.conf:/etc/nginx/conf.d/custom_proxy_settings.conf:ro
+        - ./.artifakt/apache/certs:/etc/nginx/certs
+
+  proxy-companion:
+    image: registry.artifakt.io/nginx-proxy-companion:latest
+    restart: always
+    environment: 
+      - "NGINX_PROXY_CONTAINER=system_nginx-proxy_1"
+    volumes:
+        - /var/run/docker.sock:/var/run/docker.sock:ro
+        - ./.artifakt/apache/certs:/etc/nginx/certs
+
+  varnish:
+    image: registry.artifakt.io/varnish:6.6
+    container_name: varnish
+    volumes:
+      - ./docker_local/varnish/default.vcl:/etc/varnish/default.vcl:ro
+      - varnish-data:/var/lib/varnish
+      - varnish-conf:/etc/varnish/conf.d
+    ports:
+      - "8888:80"
+    environment:
+      VIRTUAL_HOST: local.arseuslab,local.dentalinov,local.implantoh
+      SELF_SIGNED_HOST: local.arseuslab,local.dentalinov,local.implantoh
+    restart: always
+
+  nginx:
+    image: registry.artifakt.io/nginx-fpm:1.21
+    container_name: nginx
+    volumes:
+      - data:/data:ro
+      - ./docker_local/nginx/default.conf:/etc/nginx/nginx.conf:ro
+      - nginxfpm-conf:/etc/nginx/conf.d
+    restart: always
+    env_file:
+        - ./.env
+
+  app:
+    build: .
+    image: base-magento
+    container_name: app
+    env_file:
+        - ./.env
+    volumes:
+#            - ".:/var/www/html" # Uncomment to develop locally
+        - "data:/data"
+        - varnish-conf:/conf/varnish
+        - nginxfpm-conf:/conf/nginxfpm
+        - ./share:/tmp/share
+        - ./.artifakt/logs:/var/log/artifakt
+    restart: always
+    expose: 
+    - 9000
+    
+
+  mysql:
+    image: mysql:8
+    container_name: mysql
+    restart: always
+    volumes:
+      - ./docker_local/mysql/mysqld.cnf:/etc/mysql/conf.d/mysqld.cnf:ro
+      - mysql-data:/var/lib/mysql:rw
+      - ./share:/tmp/share
+    environment:
+      MYSQL_DATABASE: ${ARTIFAKT_MYSQL_DATABASE_NAME:-changeme}
+      MYSQL_USER: ${ARTIFAKT_MYSQL_USER:-changeme}
+      MYSQL_PASSWORD: ${ARTIFAKT_MYSQL_PASSWORD:-s3cr3t!}
+      MYSQL_RANDOM_ROOT_PASSWORD: "true"
+    ports:
+      - "3306:3306"
+
+  redis:
+    image: redis:6.2
+    container_name: redis
+    restart: always
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - ./docker_local/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    ports:
+     - "6379:6379"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
+    command: >
+      /bin/sh -c "./bin/elasticsearch-plugin install analysis-icu analysis-phonetic;
+      /usr/local/bin/docker-entrypoint.sh"
+    container_name: elasticsearch
+    restart: always
+    environment:
+      - node.name=es01
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data:rw
+
+
