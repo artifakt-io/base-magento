@@ -27,6 +27,9 @@ set -e
 # ARTIFAKT_MYSQL_*
 # ARTIFAKT_ENVIRONMENT_NAME
 
+ARTIFAKT_DOMAIN=${ARTIFAKT_DOMAIN:=localhost}
+export ARTIFAKT_DOMAIN
+
 echo "#4 - Sync shared folders with Nginx FPM container"
 
 PERSISTENT_FOLDER_LIST=('pub/media' 'pub/static' 'var')
@@ -51,17 +54,22 @@ done
 cp -pu -L ./pub/* /data/pub/ || true
 
 echo "DEBUG: waiting for database to be available..."
-wait-for $ARTIFAKT_MYSQL_HOST:3306 --timeout=90 -- echo "Mysql is up, proceeding with starting sequence"
+wait-for $ARTIFAKT_MYSQL_HOST:$ARTIFAKT_MYSQL_PORT --timeout=90 -- echo "Mysql is up, proceeding with starting sequence"
+
+wait-for $ARTIFAKT_REDIS_HOST:$ARTIFAKT_REDIS_PORT --timeout=90 -- echo "Redis is up, proceeding with starting sequence"
+
+wait-for $ARTIFAKT_ES_HOST:$ARTIFAKT_ES_PORT --timeout=90 -- echo "Elasticsearch is up, proceeding with starting sequence"
 
 # Check if Magento is installed
 tableCount=$(mysql -h $ARTIFAKT_MYSQL_HOST -u $ARTIFAKT_MYSQL_USER -p$ARTIFAKT_MYSQL_PASSWORD $ARTIFAKT_MYSQL_DATABASE_NAME -B -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$ARTIFAKT_MYSQL_DATABASE_NAME';" | grep -v "count");
 
-echo "DEBUG: found $tableCound tables in mysql"
+echo "DEBUG: found $tableCount tables in mysql"
 
 if [ $tableCount -eq 0 ]
 then
   if [ $ARTIFAKT_IS_MAIN_INSTANCE == 1 ]
   then
+    echo "DEBUG: triggering first install script"
     source /.artifakt/install.sh
   fi
 else
@@ -134,6 +142,13 @@ else
     composer show
     echo "DEBUG --------------------------- END"    
     
+    # because base magento image is first running without ARTIFAKT_DOMAIN...
+    # ... we give the opportunity to force the ARTIFAKT_DOMAIN on second build/deploy here
+    if [ ! -z "$ARTIFAKT_DOMAIN" ]; then
+      php bin/magento config:set  --lock-env web/unsecure/base_url http://$ARTIFAKT_DOMAIN/
+      php bin/magento config:set  --lock-env web/secure/base_url https://$ARTIFAKT_DOMAIN/
+    fi
+
     #3 - Upgrade configuration if needed
     echo "#3 - Upgrade configuration if needed"
     if [ "$(bin/magento app:config:status)" != "Config files are up to date." ]

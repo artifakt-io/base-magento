@@ -2,6 +2,14 @@
 
 [ "$DEBUG" = "true" ] && set -x
 
+echo "DEBUG: start install script, env:"
+
+env | grep ARTIFAKT
+
+# on first install, use the custom env.php file from Artifakt
+#cp /.artifakt/app/etc/env.php.sample /var/www/html/app/etc/env.php
+#chown www-data:www-data /var/www/html/app/etc/env.php
+
 php bin/magento setup:install \
   --admin-email="email@example.com" \
   --admin-firstname="John" \
@@ -10,7 +18,6 @@ php bin/magento setup:install \
   --admin-use-security-key="1" \
   --admin-user="admin" \
   --backend-frontname="admin" \
-  --base-url="http://localhost/" \
   --cache-backend-redis-db="0" \
   --cache-backend-redis-password='' \
   --cache-backend-redis-port="${ARTIFAKT_REDIS_PORT}" \
@@ -49,6 +56,8 @@ php bin/magento setup:install \
   --use-secure="0"
 
 if [ ! -z "$ARTIFAKT_DOMAIN" ]; then
-  php bin/magento config:set web/unsecure/base_url http://$ARTIFAKT_DOMAIN/
-  php bin/magento config:set web/secure/base_url https://$ARTIFAKT_DOMAIN/
+  php bin/magento config:set  --lock-env web/unsecure/base_url http://$ARTIFAKT_DOMAIN/
+  php bin/magento config:set  --lock-env web/secure/base_url https://$ARTIFAKT_DOMAIN/
 fi
+
+php bin/magento app:config:import --no-interaction
