@@ -1,4 +1,4 @@
-FROM registry.artifakt.io/magento:2.4
+FROM registry.artifakt.io/magento:2.4-php8
 
 ARG CODE_ROOT=.
 USER root
